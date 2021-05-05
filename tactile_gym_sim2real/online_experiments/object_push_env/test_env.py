@@ -1,7 +1,7 @@
 import random
 import time
 import os
-from pybullet_real2sim.online_experiments.object_push_env.object_push_env import ObjectPushEnv
+from tactile_gym_sim2real.online_experiments.object_push_env.object_push_env import ObjectPushEnv
 
 def main():
 

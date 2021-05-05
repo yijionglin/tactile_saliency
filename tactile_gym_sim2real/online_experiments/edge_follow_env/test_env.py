@@ -1,7 +1,7 @@
 import random
 import time
 import os
-from pybullet_real2sim.online_experiments.edge_follow_env.edge_follow_env import EdgeFollowEnv
+from tactile_gym_sim2real.online_experiments.edge_follow_env.edge_follow_env import EdgeFollowEnv
 
 def main():
 

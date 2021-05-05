@@ -7,15 +7,15 @@ import torch.nn.functional as F
 import torch
 
 # TODO: do this but better
-# from pybullet_real2sim.pix2pix.gan_models.models_64_auxrl import *
-# from pybullet_real2sim.pix2pix.gan_models.models_128_auxrl import *
-# from pybullet_real2sim.pix2pix.gan_models.models_256_auxrl import *
-from pybullet_real2sim.pix2pix.gan_models.models_256 import *
+# from tactile_gym_sim2real.pix2pix.gan_models.models_64_auxrl import *
+# from tactile_gym_sim2real.pix2pix.gan_models.models_128_auxrl import *
+# from tactile_gym_sim2real.pix2pix.gan_models.models_256_auxrl import *
+from tactile_gym_sim2real.pix2pix.gan_models.models_256 import *
 
-from pybullet_real2sim.common_utils import *
-from pybullet_real2sim.image_transforms import *
+from tactile_gym_sim2real.common_utils import *
+from tactile_gym_sim2real.image_transforms import *
 
-from pybullet_sims.utils.general_utils import load_json_obj
+from tactile_gym.utils.general_utils import load_json_obj
 
 class pix2pix_GAN():
 

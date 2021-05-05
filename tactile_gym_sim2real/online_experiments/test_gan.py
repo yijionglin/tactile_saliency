@@ -6,10 +6,10 @@ import numpy as np
 from vsp.video_stream import CvVideoDisplay, CvVideoOutputFile, CvVideoCamera
 from vsp.processor import CameraStreamProcessorMT, AsyncProcessor
 
-from pybullet_real2sim.online_experiments.gan_net import pix2pix_GAN
-from pybullet_real2sim.image_transforms import *
+from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
+from tactile_gym_sim2real.image_transforms import *
 
-from pybullet_sims.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.assets import get_assets_path, add_assets_path
 
 def make_sensor():
     return AsyncProcessor(CameraStreamProcessorMT(
@@ -49,8 +49,12 @@ add_border = True
 GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, rl_image_size=image_size)
 
 # load saved border image files
-border_gray_savefile = os.path.join( getBorderImagesPath(), 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'border_gray.npy')
-border_mask_savefile = os.path.join( getBorderImagesPath(), 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'border_mask.npy')
+ref_images_path = add_assets_path(
+    os.path.join('robot_assets','tactip','tactip_reference_images')
+)
+
+border_gray_savefile = os.path.join( ref_images_path, 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'nodef_gray.npy')
+border_mask_savefile = os.path.join( ref_images_path, 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'border_mask.npy')
 border_gray = np.load(border_gray_savefile)
 border_mask = np.load(border_mask_savefile)
 

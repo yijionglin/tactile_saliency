@@ -18,11 +18,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-from pybullet_real2sim.common_utils import *
-from pybullet_real2sim.image_transforms import *
+from tactile_gym_sim2real.common_utils import *
+from tactile_gym_sim2real.image_transforms import *
 
-from pybullet_sims.utils.general_utils import str2bool, load_json_obj, save_json_obj, empty_dir
-from pybullet_sims.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.utils.general_utils import str2bool, load_json_obj, save_json_obj, empty_dir
+from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
 
 save_flag = False
 take_snapshot = False
@@ -50,21 +50,21 @@ augmentation_params['noise_var'] = None
 # import the correct GAN models
 if list(augmentation_params['dims']) == [256,256]:
     if mode in ['edge_2d', 'surface_3d']:
-        from pybullet_real2sim.pix2pix.gan_models.models_256_auxrl import *
+        from tactile_gym_sim2real.pix2pix.gan_models.models_256_auxrl import *
     elif mode in ['spherical_probe']:
-        from pybullet_real2sim.pix2pix.gan_models.models_256 import *
+        from tactile_gym_sim2real.pix2pix.gan_models.models_256 import *
 
 elif list(augmentation_params['dims']) == [128,128]:
     if mode in ['edge_2d', 'surface_3d']:
-        from pybullet_real2sim.pix2pix.gan_models.models_256_auxrl import *
+        from tactile_gym_sim2real.pix2pix.gan_models.models_256_auxrl import *
     elif mode in ['spherical_probe']:
-        from pybullet_real2sim.pix2pix.gan_models.models_256 import *
+        from tactile_gym_sim2real.pix2pix.gan_models.models_256 import *
 
 elif list(augmentation_params['dims']) == [64,64]:
     if mode in ['edge_2d', 'surface_3d']:
-        from pybullet_real2sim.pix2pix.gan_models.models_64_auxrl import *
+        from tactile_gym_sim2real.pix2pix.gan_models.models_64_auxrl import *
     elif mode in ['spherical_probe']:
-        from pybullet_real2sim.pix2pix.gan_models.models_64 import *
+        from tactile_gym_sim2real.pix2pix.gan_models.models_64 import *
 else:
     sys.exit('Incorrect dims specified')
 

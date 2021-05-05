@@ -17,7 +17,7 @@ list_converter = lambda x: np.array(x.strip("[]").replace("'","").replace(","," 
 array_converter = lambda x: np.array(x.strip("[]").replace("'","").split()).astype(np.float32)
 
 # data dir
-data_dir = 'cube_straight_keep'
+# data_dir = 'cube_straight'
 # data_dir = 'cylinder_straight'
 # data_dir = 'hexagonal_prism_straight'
 # data_dir = 'mug_straight'
@@ -27,7 +27,7 @@ data_dir = 'cube_straight_keep'
 # data_dir = 'hexagonal_prism_curve'
 # data_dir = 'mug_curve'
 #
-# data_dir = 'cube_sin'
+data_dir = 'cube_sin'
 # data_dir = 'cylinder_sin'
 # data_dir = 'hexagonal_prism_sin'
 # data_dir = 'mug_sin'
@@ -50,8 +50,10 @@ def get_tip_direction_workframe(current_tip_pose):
     Warning, deadline research code (specific to current workframe)
     """
     # angle for perp and par vectors
-    par_ang  = -( current_tip_pose[5] + 45 ) * np.pi/180
-    perp_ang = -( current_tip_pose[5] + 45 - 90 ) * np.pi/180
+    # par_ang  = -( current_tip_pose[5] + 45 ) * np.pi/180
+    # perp_ang = -( current_tip_pose[5] + 45 - 90 ) * np.pi/180
+    par_ang  = -( current_tip_pose[5] ) * np.pi/180
+    perp_ang = -( current_tip_pose[5] - 90 ) * np.pi/180
 
     # create vectors (directly in workframe) pointing in perp and par directions of current sensor
     workframe_par_tip_direction  = np.array([np.cos(par_ang),  np.sin(par_ang), 0]) # vec pointing outwards from tip
@@ -89,23 +91,42 @@ scat_step_size = 1
 
 #  plot normals
 quiv_step_size = 3
-ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],
-          par_x[::quiv_step_size], par_y[::quiv_step_size],
-          color='b', alpha=1.0, scale=25.0, angles='uv',
-          width=0.0025, headwidth=2.5, headlength=5.0)
+# ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],
+#           par_x[::quiv_step_size], par_y[::quiv_step_size],
+#           color='b', alpha=1.0, scale=25.0, angles='uv',
+#           width=0.0025, headwidth=2.5, headlength=5.0)
 
-ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],
-          perp_x[::quiv_step_size], perp_y[::quiv_step_size],
-          color='g', alpha=1.0, scale=25.0, angles='uv',
-          width=0.0025, headwidth=2.5, headlength=5.0)
+# ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],
+#           perp_x[::quiv_step_size], perp_y[::quiv_step_size],
+#           color='g', alpha=1.0, scale=25.0, angles='uv',
+#           width=0.0025, headwidth=2.5, headlength=5.0)
 
 # plot target trajectory
 # load trajectory data
-num_traj = 2
+num_traj = 3
 for i in range(num_traj):
     traj_pos = np.load(os.path.join('collected_data', data_dir, 'traj_pos_{}.npy'.format(i))) * 1000
     traj_rpy = np.load(os.path.join('collected_data', data_dir, 'traj_rpy_{}.npy'.format(i))) * 180 / np.pi
-    ax.scatter(traj_pos[:,0], traj_pos[:,1], color='r', marker='.', alpha=1.0)
+
+    for pos, rpy in zip(traj_pos, traj_rpy):
+        pose = np.concatenate([pos, rpy], axis=0)
+        par_dir, perp_dir  = get_tip_direction_workframe(pose)
+
+        goal_x, goal_y = pos[0], pos[1]
+        par_x, perp_x = par_dir[0], perp_dir[0]
+        par_y, perp_y = par_dir[1], perp_dir[1]
+
+        ax.scatter(goal_x, goal_y, color='b', marker='.', alpha=1.0)
+
+        ax.quiver(goal_x, goal_y,
+                  par_x, par_y,
+                  color='g', alpha=1.0, scale=25.0, angles='uv',
+                  width=0.0025, headwidth=2.5, headlength=5.0)
+
+        ax.quiver(goal_x, goal_y,
+                  perp_x, perp_y,
+                  color='r', alpha=1.0, scale=25.0, angles='uv',
+                  width=0.0025, headwidth=2.5, headlength=5.0)
 
 # ax.set_xlim(np.min(px), np.max(px))
 # ax.set_ylim(np.min(py), np.max(py))

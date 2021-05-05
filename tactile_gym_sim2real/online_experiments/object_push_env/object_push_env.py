@@ -12,10 +12,10 @@ import matplotlib.pyplot as plt
 import cri
 import pybullet as pb
 
-from pybullet_real2sim.online_experiments.ur5_tactip import UR5_TacTip
-from pybullet_real2sim.online_experiments.gan_net import pix2pix_GAN
+from tactile_gym_sim2real.online_experiments.ur5_tactip import UR5_TacTip
+from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
 
-from pybullet_sims.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
 
 class ObjectPushEnv(gym.Env):
 

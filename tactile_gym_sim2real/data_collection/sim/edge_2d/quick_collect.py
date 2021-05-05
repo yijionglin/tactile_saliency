@@ -1,7 +1,7 @@
 import os
-from pybullet_sims import models
-from pybullet_real2sim.data_collection.sim.edge_2d.setup_edge_data_collection import setup_collect_dir
-from pybullet_real2sim.data_collection.sim.collect_data import collect_data
+from tactile_gym import models
+from tactile_gym_sim2real.data_collection.sim.edge_2d.setup_edge_data_collection import setup_collect_dir
+from tactile_gym_sim2real.data_collection.sim.collect_data import collect_data
 
 
 """
@@ -10,7 +10,7 @@ Train: 5000
 Val: 2000
 
 CSV collect
-Dir: '/home/alex/Documents/pybullet_real2sim/pybullet_real2sim/data_collection/real/data/edge2dTap' # set this to stored data
+Dir: '/home/alex/Documents/tactile_gym_sim2real/tactile_gym_sim2real/data_collection/real/data/edge2dTap' # set this to stored data
 Train: 'square_360_-6_6_train'
 Val:   'square_360_-6_6_val'
 """
@@ -33,9 +33,9 @@ shuffle_data = False
 apply_shear  = True
 
 if apply_shear:
-    target_home_dir   = '/home/alex/Documents/pybullet_real2sim/pybullet_real2sim/data_collection/real/data/edge_2d/shear'
+    target_home_dir   = '/home/alex/Documents/tactile_gym_sim2real/tactile_gym_sim2real/data_collection/real/data/edge_2d/shear'
 else:
-    target_home_dir   = '/home/alex/Documents/pybullet_real2sim/pybullet_real2sim/data_collection/real/data/edge_2d/tap'
+    target_home_dir   = '/home/alex/Documents/tactile_gym_sim2real/tactile_gym_sim2real/data_collection/real/data/edge_2d/tap'
 
 image_sizes = [[64,64], [128,128], [256,256]]
 border_types = [True, False]

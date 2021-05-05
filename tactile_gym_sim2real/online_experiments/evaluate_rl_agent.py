@@ -7,9 +7,9 @@ import pandas as pd
 
 import stable_baselines3 as sb3
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecTransposeImage, VecFrameStack
-from pybullet_sims.rl_algos.stable_baselines.custom.custom_vec_transpose import NoAssertVecTransposeImage
+from tactile_gym.rl_algos.stable_baselines.custom.custom_vec_transpose import NoAssertVecTransposeImage
 
-from pybullet_sims.utils.general_utils import load_json_obj
+from tactile_gym.utils.general_utils import load_json_obj
 
 IMAGE_FEATURE_EXTRACTORS_NAMES = ['MixObsNatureCNN', 'ImageAugMixObsNatureCNN']
 

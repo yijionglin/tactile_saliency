@@ -1,7 +1,7 @@
 import random
 import time
 import os
-from pybullet_real2sim.online_experiments.ur5_test_env.ur5_test_env import UR5TestEnv
+from tactile_gym_sim2real.online_experiments.ur5_test_env.ur5_test_env import UR5TestEnv
 
 def main():
 

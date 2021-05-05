@@ -1,7 +1,7 @@
 import random
 import time
 import os
-from pybullet_real2sim.online_experiments.surface_follow_env.surface_follow_dir_env import SurfaceFollowDirEnv
+from tactile_gym_sim2real.online_experiments.surface_follow_env.surface_follow_dir_env import SurfaceFollowDirEnv
 
 def main():
 

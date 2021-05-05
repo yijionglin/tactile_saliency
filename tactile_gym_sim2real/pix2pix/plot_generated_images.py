@@ -17,11 +17,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-from pybullet_real2sim.common_utils import *
-from pybullet_real2sim.pix2pix.image_generator import DataGenerator
-from pybullet_real2sim.image_transforms import *
+from tactile_gym_sim2real.common_utils import *
+from tactile_gym_sim2real.pix2pix.image_generator import DataGenerator
+from tactile_gym_sim2real.image_transforms import *
 
-from pybullet_sims.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")

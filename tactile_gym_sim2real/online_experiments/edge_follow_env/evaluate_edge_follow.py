@@ -1,7 +1,7 @@
 import os
 
-from pybullet_real2sim.online_experiments.edge_follow_env.edge_follow_env import EdgeFollowEnv
-from pybullet_real2sim.online_experiments.evaluate_rl_agent import final_evaluation
+from tactile_gym_sim2real.online_experiments.edge_follow_env.edge_follow_env import EdgeFollowEnv
+from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_evaluation
 
 # evaluate params
 n_eval_episodes = 1

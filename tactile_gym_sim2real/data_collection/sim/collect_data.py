@@ -10,11 +10,11 @@ import json
 import pandas as pd
 import cv2
 
-from pybullet_sims.cri_envs.cri_ur5_tactip import CRI_UR5_TacTip
+from tactile_gym.cri_envs.cri_ur5_tactip import CRI_UR5_TacTip
 
-from pybullet_sims.utils.serialization_utils import convert_json
-from pybullet_sims.utils.general_utils import str2bool, save_json_obj, empty_dir, check_dir
-from pybullet_sims import models
+from tactile_gym.utils.serialization_utils import convert_json
+from tactile_gym.utils.general_utils import str2bool, save_json_obj, empty_dir, check_dir
+from tactile_gym import models
 
 def make_target_df_rand(poses_rng, moves_rng, num_poses, obj_poses, target_file, shuffle_data=False):
     # generate random poses

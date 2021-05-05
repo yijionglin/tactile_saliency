@@ -93,7 +93,7 @@ pRz = vector_array[:,2]
 
 # fit a Surface to the data
 nx, ny = len(px),len(py)
-nx, ny = 64,64
+nx, ny = 128,128
 x = np.linspace(px.min(), px.max(), nx)
 y = np.linspace(px.min(), px.max(), ny)
 xv, yv = np.meshgrid(x, y, sparse=False, indexing='ij')
@@ -101,14 +101,14 @@ xv, yv = np.meshgrid(x, y, sparse=False, indexing='ij')
 points = np.array((px, py)).T
 values = pz
 surf = interpolate.griddata(points, values, (xv, yv), method='linear')
-surf[np.isnan(surf)] = 0
+# surf[np.isnan(surf)] = 0
 # np.save(os.path.join(data_dir,'real_hieghtfield_data.npy'), surf*0.001)
 
 # plot figure
 fig = plt.figure()
 ax = plt.axes(projection='3d')
 
-ax.plot_surface(xv, yv, surf, cmap=cm.coolwarm, vmin=np.nanmin(surf), vmax=np.nanmax(surf))
+ax.plot_surface(xv, yv, surf, cmap=cm.coolwarm, vmin=np.nanmin(surf), vmax=np.nanmax(surf), alpha=0.5)
 # ax.plot_trisurf(xv.ravel(), yv.ravel(), surf.ravel(), cmap=cm.coolwarm, vmin=np.nanmin(surf), vmax=np.nanmax(surf))
 
 scat_step_size = 2
@@ -150,13 +150,18 @@ fig.savefig(os.path.join(data_dir, 'surf_view.png'), dpi=320, pad_inches=0.01, b
 plt.show()
 
 #  plot normals
+# ax.clear()
+ax.set_xticks([])
+ax.set_yticks([])
+ax.set_zticks([])
+
 ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],  pz[::quiv_step_size],
           pRx[::quiv_step_size], pRy[::quiv_step_size], pRz[::quiv_step_size],
-          color='r', length=4.0, normalize=False, alpha=0.25, arrow_length_ratio=0.0)
+          color='r', length=4.0, normalize=False, alpha=0.5, arrow_length_ratio=0.0)
 
 # set view for normals
 ax.view_init(azim=-90, elev=90)
 ax.dist = 6.5
 
-fig.savefig(os.path.join(data_dir, 'norm_view.png'), dpi=320, pad_inches=0.01, bbox_inches='tight')
+fig.savefig(os.path.join(data_dir, 'norm_view.png'), dpi=320, pad_inches=0.01, bbox_inches='tight', transparent=True)
 plt.show()

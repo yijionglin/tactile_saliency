@@ -3,7 +3,7 @@ import re
 import cv2
 import imageio
 
-directory = '/home/alex/Documents/pybullet_real2sim/pybullet_real2sim/pix2pix/saved_models/[edge_2d,surface_3d]/256x256_[tap]_250epochs/images'
+directory = '/home/alex/Documents/tactile_gym_sim2real/tactile_gym_sim2real/pix2pix/saved_models/[edge_2d,surface_3d]/256x256_[tap]_250epochs/images'
 
 dir_list = os.path.normpath(directory).split(os.sep)
 model_name = dir_list[-3] + '_' + dir_list[-2]

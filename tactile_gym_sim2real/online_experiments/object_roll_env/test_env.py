@@ -1,7 +1,7 @@
 import random
 import time
 import os
-from pybullet_real2sim.online_experiments.object_roll_env.object_roll_env import ObjectRollEnv
+from tactile_gym_sim2real.online_experiments.object_roll_env.object_roll_env import ObjectRollEnv
 
 def main():
 

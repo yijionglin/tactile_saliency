@@ -7,7 +7,7 @@ import os
 import cv2
 from skimage.metrics import structural_similarity
 
-from pybullet_real2sim.image_transforms import load_video_frames
+from tactile_gym_sim2real.image_transforms import load_video_frames
 
 import seaborn as sns
 sns.set(style="darkgrid")

@@ -5,7 +5,7 @@ import cv2
 import pandas as pd
 import torch
 
-from pybullet_real2sim.image_transforms import process_image
+from tactile_gym_sim2real.image_transforms import process_image
 
 class DataGenerator(torch.utils.data.Dataset):
 

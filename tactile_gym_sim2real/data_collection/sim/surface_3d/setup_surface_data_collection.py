@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import json
 
-from pybullet_sims.utils.general_utils import check_dir
+from tactile_gym.utils.general_utils import check_dir
 
-from pybullet_real2sim.data_collection.sim.collect_data import make_target_df_csv, make_target_df_rand
+from tactile_gym_sim2real.data_collection.sim.collect_data import make_target_df_csv, make_target_df_rand
 
 def setup_collect_dir(num_samples=100, apply_shear=True, shuffle_data=False, og_collect_dir=None, collect_dir_name=None):
 

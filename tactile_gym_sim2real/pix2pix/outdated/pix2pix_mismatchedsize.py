@@ -17,18 +17,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-# from pybullet_real2sim.pix2pix.models.models_64 import *
-# from pybullet_real2sim.pix2pix.models.models_128 import *
-# from pybullet_real2sim.pix2pix.models.models_64_specnorm import *
-# from pybullet_real2sim.pix2pix.models.models_128_specnorm import *
-# from pybullet_real2sim.pix2pix.models.models_128_altactivation import *
-# from pybullet_real2sim.pix2pix.models.models_256 import *
-from pybullet_real2sim.pix2pix.models.models_256to64_specnorm import *
+# from tactile_gym_sim2real.pix2pix.models.models_64 import *
+# from tactile_gym_sim2real.pix2pix.models.models_128 import *
+# from tactile_gym_sim2real.pix2pix.models.models_64_specnorm import *
+# from tactile_gym_sim2real.pix2pix.models.models_128_specnorm import *
+# from tactile_gym_sim2real.pix2pix.models.models_128_altactivation import *
+# from tactile_gym_sim2real.pix2pix.models.models_256 import *
+from tactile_gym_sim2real.pix2pix.models.models_256to64_specnorm import *
 
-from pybullet_real2sim.pix2pix.image_generator import DataGenerator
-from pybullet_real2sim.common_utils import *
+from tactile_gym_sim2real.pix2pix.image_generator import DataGenerator
+from tactile_gym_sim2real.common_utils import *
 
-from pybullet_sims.utils.general_utils import str2bool, save_json_obj, empty_dir
+from tactile_gym.utils.general_utils import str2bool, save_json_obj, empty_dir
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")

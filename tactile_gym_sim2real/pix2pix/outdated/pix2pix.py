@@ -17,10 +17,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-from pybullet_real2sim.pix2pix.image_generator import DataGenerator
-from pybullet_real2sim.common_utils import *
+from tactile_gym_sim2real.pix2pix.image_generator import DataGenerator
+from tactile_gym_sim2real.common_utils import *
 
-from pybullet_sims.utils.general_utils import str2bool, save_json_obj, empty_dir
+from tactile_gym.utils.general_utils import str2bool, save_json_obj, empty_dir
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
@@ -54,21 +54,21 @@ training_real_data_dir   = '../data_collection/real/data/edge2dTap/square_360_-6
 validation_real_data_dir = '../data_collection/real/data/edge2dTap/square_360_-6_6_val'
 
 if list(augmentation_params['dims']) == [256,256]:
-    from pybullet_real2sim.pix2pix.gan_models.models_256_specnorm import *
+    from tactile_gym_sim2real.pix2pix.gan_models.models_256_specnorm import *
     training_sim_data_dir   = '../data_collection/sim/data/edge2dTap/rigid/border/256x256/square_360_-6_6_train'
     validation_sim_data_dir = '../data_collection/sim/data/edge2dTap/rigid/border/256x256/square_360_-6_6_val'
     # training_sim_data_dir   = '../data_collection/sim/data/edge2dTap/rigid/no_border/256x256/square_360_-6_6_train'
     # validation_sim_data_dir = '../data_collection/sim/data/edge2dTap/rigid/no_border/256x256/square_360_-6_6_val'
 
 elif list(augmentation_params['dims']) == [128,128]:
-    from pybullet_real2sim.pix2pix.gan_models.models_128_specnorm import *
+    from tactile_gym_sim2real.pix2pix.gan_models.models_128_specnorm import *
     training_sim_data_dir   = '../data_collection/sim/data/edge2dTap/rigid/border/128x128/square_360_-6_6_train'
     validation_sim_data_dir = '../data_collection/sim/data/edge2dTap/rigid/border/128x128/square_360_-6_6_val'
     # training_sim_data_dir   = '../data_collection/sim/data/edge2dTap/rigid/no_border/128x128/square_360_-6_6_train'
     # validation_sim_data_dir = '../data_collection/sim/data/edge2dTap/rigid/no_border/128x128/square_360_-6_6_val'
 
 elif list(augmentation_params['dims']) == [64,64]:
-    from pybullet_real2sim.pix2pix.gan_models.models_64_specnorm import *
+    from tactile_gym_sim2real.pix2pix.gan_models.models_64_specnorm import *
     training_sim_data_dir   = '../data_collection/sim/data/edge2dTap/rigid/border/64x64/square_360_-6_6_train'
     validation_sim_data_dir = '../data_collection/sim/data/edge2dTap/rigid/border/64x64/square_360_-6_6_val'
     # training_sim_data_dir   = '../data_collection/sim/data/edge2dTap/rigid/no_border/64x64/square_360_-6_6_train'

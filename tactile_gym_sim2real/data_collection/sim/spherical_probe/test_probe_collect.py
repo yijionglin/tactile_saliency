@@ -1,9 +1,9 @@
 import os
 import numpy as np
-from pybullet_sims import models
+from tactile_gym import models
 
-from pybullet_real2sim.data_collection.sim.spherical_probe.setup_probe_data_collection import setup_collect_dir
-from pybullet_real2sim.data_collection.sim.collect_data import collect_data
+from tactile_gym_sim2real.data_collection.sim.spherical_probe.setup_probe_data_collection import setup_collect_dir
+from tactile_gym_sim2real.data_collection.sim.collect_data import collect_data
 
 tactip_params = {
     'type':'flat',
@@ -19,7 +19,7 @@ apply_shear = False
 collect_dir_name = 'temp'
 
 # use csv or not
-# og_collect_dir = '/home/alex/Documents/pybullet_real2sim/pybullet_real2sim/data_collection/real/data/spherical_probe/tap/csv_val' # set this to stored data
+# og_collect_dir = '/home/alex/Documents/tactile_gym_sim2real/tactile_gym_sim2real/data_collection/real/data/spherical_probe/tap/csv_val' # set this to stored data
 og_collect_dir = None
 
 # setup stimulus

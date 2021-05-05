@@ -16,7 +16,7 @@ from cri.controller import RTDEController
 from vsp.video_stream import CvVideoDisplay, CvVideoOutputFile, CvVideoCamera
 from vsp.processor import CameraStreamProcessorMT, AsyncProcessor
 
-from pybullet_sims.utils.general_utils import str2bool, save_json_obj, empty_dir
+from tactile_gym.utils.general_utils import str2bool, save_json_obj, empty_dir
 
 np.set_printoptions(precision=4, suppress=True)
 

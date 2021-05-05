@@ -1,7 +1,7 @@
 import os
 
-from pybullet_real2sim.online_experiments.object_roll_env.object_roll_env import ObjectRollEnv
-from pybullet_real2sim.online_experiments.evaluate_rl_agent import final_evaluation
+from tactile_gym_sim2real.online_experiments.object_roll_env.object_roll_env import ObjectRollEnv
+from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_evaluation
 
 # evaluate params
 n_eval_episodes = 5

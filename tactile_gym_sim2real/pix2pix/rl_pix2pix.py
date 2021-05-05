@@ -19,15 +19,14 @@ import torch.nn.functional as F
 import torch
 import stable_baselines3 as sb3
 
-from pybullet_real2sim.pix2pix.image_generator import DataGenerator
-from pybullet_real2sim.common_utils import load_gan_model
-from pybullet_real2sim.plot_tools import *
+from tactile_gym_sim2real.pix2pix.image_generator import DataGenerator
+from tactile_gym_sim2real.plot_tools import *
 
-from pybullet_sims.rl_algos.stable_baselines.rl_utils import make_eval_env
-from pybullet_sims.rl_envs.ur5_envs.edge_envs.edge_follow_env import EdgeFollowEnv
-from pybullet_sims.utils.general_utils import str2bool, load_json_obj, save_json_obj, check_dir
-from pybullet_sims.rl_algos.stable_baselines.rl_plot_utils import plot_obs_stack
-from pybullet_sims.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.rl_algos.stable_baselines.rl_utils import make_eval_env
+from tactile_gym.rl_envs.ur5_envs.edge_envs.edge_follow_env import EdgeFollowEnv
+from tactile_gym.utils.general_utils import str2bool, load_json_obj, save_json_obj, check_dir
+from tactile_gym.rl_algos.stable_baselines.rl_plot_utils import plot_obs_stack
+from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", type=int, default=0, help="epoch to start training from")
@@ -90,16 +89,16 @@ validation_sim_data_dirs  = [os.path.join('../data_collection/sim/data/',  data_
 
 # import the correct GAN models
 if list(augmentation_params['dims']) == [256,256]:
-    from pybullet_real2sim.pix2pix.gan_models.models_256_auxrl import *
+    from tactile_gym_sim2real.pix2pix.gan_models.models_256_auxrl import *
 elif list(augmentation_params['dims']) == [128,128]:
-    from pybullet_real2sim.pix2pix.gan_models.models_128_auxrl import *
+    from tactile_gym_sim2real.pix2pix.gan_models.models_128_auxrl import *
 elif list(augmentation_params['dims']) == [64,64]:
-    from pybullet_real2sim.pix2pix.gan_models.models_64_auxrl import *
+    from tactile_gym_sim2real.pix2pix.gan_models.models_64_auxrl import *
 else:
     sys.exit('Incorrect dims specified')
 
 # Load a trained RL model
-rl_model_dir = '/home/alex/Documents/pybullet_sims/pybullet_sims/rl_algos/stable_baselines/saved_models/edge_follow/ppo/keep/64_rand'
+rl_model_dir = '/home/alex/Documents/tactile_gym/tactile_gym/rl_algos/stable_baselines/saved_models/edge_follow/ppo/keep/64_rand'
 deterministic = True
 
 rl_params  = load_json_obj(os.path.join(rl_model_dir, 'rl_params'))

@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 import json
 
-from pybullet_sims.utils.general_utils import check_dir
+from tactile_gym.utils.general_utils import check_dir
 
-from pybullet_real2sim.data_collection.sim.collect_data import make_target_df_csv
+from tactile_gym_sim2real.data_collection.sim.collect_data import make_target_df_csv
 
 def make_target_df_rand(poses_rng, moves_rng, num_poses, obj_poses, target_file, shuffle_data=False):
     # generate random poses

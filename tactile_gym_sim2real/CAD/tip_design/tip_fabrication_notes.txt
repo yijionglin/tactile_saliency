@@ -1,0 +1,45 @@
+Notes on fabrication guide
+
+3d printing
+• Produce the STLs from the assembly file. 
+• Print on the OBJET with the VeroWhite of the outer ring set to glossy and print also plugs. Glossy is important as matt is slightly thicker which would cause issues to clip it with the rest of the sensor structure.
+ 
+ - ^ possibly outdated
+
+Cleaning 
+
+ - leave support covering skin
+ - fan (white) attachment for power washer thing
+ - can use max power but would work up to it
+ - takes some time, best to do serveral passes
+ - can use oven to dry off in between when doing several
+ - check pins are separated, use tweezers/paintbrush to separate any that are stuck
+ - use drill bit slightly bigger than hole to clean plug holes (ask andy for drill bit)
+ - remove support from skin with scraper/brush/hands
+ - wash off rest with lighter setting, support skin whilst doing so
+
+Lens fitting
+• Put a small droplet of Loctite on the white inside circular ridge and make it flow all the way by moving the tip in a circular motion. 
+• Put the lens in. 
+• Put another droplet and repeat. 
+• If needed put other droplets and move the tip in a circular motion to distribute the glue. Leave it to dry one day.
+
+ - should slide in/out fairly easily
+ - Andy cuts lens slightly smaller than ones left on bitbucket
+ - use bluetack to place, avoid touching with fingers
+ - leave in oven to dry after
+
+Filling
+
+ - prep station
+ - get syringe + needles(size 10), plastic cups, something to stir with
+ - 20ml per tip + extra
+ - mix A and B in cup
+ - be sure to keep gel bottles clean and not cross contaminate between the two
+ - degas in vaccumm chamber, slow release
+ - pull mixed liquid into syringe, clean, place tip on
+ - should fit into hole with space for air to release
+ - press untill filled, hold up to light to check for bubbles.
+ - insert plug and slightly adjust
+ - leave to cure on side with plug at top (1 hourish)
+ - place in oven overnight.

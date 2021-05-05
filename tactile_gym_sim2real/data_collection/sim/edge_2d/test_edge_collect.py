@@ -1,0 +1,37 @@
+import os
+import numpy as np
+
+from pybullet_sims import models
+
+from pybullet_real2sim.data_collection.sim.edge_2d.setup_edge_data_collection import setup_collect_dir
+from pybullet_real2sim.data_collection.sim.collect_data import collect_data
+
+tactip_params = {
+    'type':'standard',
+    'core':'no_core',
+    'image_size':[256,256],
+    'border':True
+}
+
+show_gui = True
+show_tactile = True
+num_samples = 100 # ignored if using csv
+apply_shear = True
+collect_dir_name = 'temp'
+
+# use csv or not
+og_collect_dir = '/home/alex/Documents/pybullet_real2sim/pybullet_real2sim/data_collection/real/data/edge_2d/tap/csv_val' # set this to stored data
+# og_collect_dir = None
+
+# setup stimulus
+stimulus_pos = [0.6,0.0,0.025]
+stimulus_rpy = [0,0,np.pi/2]
+stim_path = os.path.join(models.getDataPath(),"tactile_stimuli/edge_stimuli/square/square.urdf")
+
+target_df, image_dir, workframe_pos, workframe_rpy = setup_collect_dir(num_samples=num_samples,
+                                                                       apply_shear=apply_shear,
+                                                                       shuffle_data=False,
+                                                                       og_collect_dir=og_collect_dir,
+                                                                       collect_dir_name=collect_dir_name)
+
+collect_data(target_df, image_dir, stim_path, stimulus_pos, stimulus_rpy, workframe_pos, workframe_rpy, tactip_params, show_gui=show_gui, show_tactile=show_tactile)

@@ -5,10 +5,9 @@ import pandas as pd
 import json
 
 from tactile_gym.utils.general_utils import check_dir
-
 from tactile_gym_sim2real.data_collection.sim.collect_data import make_target_df_csv
 
-def make_target_df_rand(poses_rng, moves_rng, num_poses, obj_poses, target_file, shuffle_data=False):
+def make_target_df_rand(poses_rng, moves_rng, num_poses, obj_poses, shuffle_data=False):
     # generate random poses
     np.random.seed()
 
@@ -48,23 +47,33 @@ def make_target_df_rand(poses_rng, moves_rng, num_poses, obj_poses, target_file,
 
     return target_df
 
-def setup_collect_dir(num_samples=100, apply_shear=True, shuffle_data=False, og_collect_dir=None, collect_dir_name=None):
+def setup_collect_dir(
+        num_samples=100,
+        apply_shear=True,
+        shuffle_data=False,
+        og_collect_dir=None,
+        collect_dir_name=None
+    ):
 
     # experiment metadata
-    home_dir = os.path.join('../data/spherical_probe', 'shear' if apply_shear else 'tap')
-
+    home_dir = os.path.join(
+        os.path.dirname(__file__),
+        '../data/spherical_probe',
+        'shear' if apply_shear else 'tap'
+    )
     if collect_dir_name is None:
         if og_collect_dir is None:
             collect_dir_name = 'collect_tap_rand_' + time.strftime('%m%d%H%M')
         else:
             collect_dir_name = os.path.basename(os.path.normpath((og_collect_dir)))
 
-    collect_dir       = os.path.join(home_dir, collect_dir_name)
-    image_dir         = os.path.join(collect_dir, 'images')
-    target_file       = os.path.join(collect_dir, 'targets.csv')
+    collect_dir = os.path.join(home_dir, collect_dir_name)
+    image_dir = os.path.join(collect_dir, 'images')
+    target_file = os.path.join(collect_dir, 'targets.csv')
 
     # set the work frame of the robot
-    workframe_pos = [0.6,    0.0, 0.0475]   # relative to world frame
+    hover_dist = 0.002 # 2mm above stim
+    workframe_pos = [0.6,    0.0, 0.045+hover_dist]   # relative to world frame
     workframe_rpy = [-np.pi, 0.0, np.pi/2]  # relative to world frame
 
     # Random data collection
@@ -87,7 +96,7 @@ def setup_collect_dir(num_samples=100, apply_shear=True, shuffle_data=False, og_
         else:
             moves_rng = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
 
-        target_df = make_target_df_rand(poses_rng, moves_rng, num_samples, obj_poses, target_file, shuffle_data)
+        target_df = make_target_df_rand(poses_rng, moves_rng, num_samples, obj_poses, shuffle_data)
 
     # collect from values in csv
     else:

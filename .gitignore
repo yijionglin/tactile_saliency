@@ -7,6 +7,7 @@
 **/generated_data/
 **/trained_gans/
 **/trained_rl_networks/
+**/.idea/
 *.pyo
 *.pyc
 .installed.cfg

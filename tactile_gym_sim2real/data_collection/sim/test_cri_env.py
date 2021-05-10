@@ -237,7 +237,7 @@ def test_movement(robot):
 if __name__ == "__main__":
 
     # mode (gpu vs direct for comparison)
-    show_gui = False
+    show_gui = True
     show_tactile = False
 
     main(show_gui, show_tactile)

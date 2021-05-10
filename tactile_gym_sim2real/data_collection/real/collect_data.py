@@ -28,7 +28,7 @@ def make_sensor():
             writer=CvVideoOutputFile(is_color=True),
         ))
 
-def unwind_robot(robot):
+def unwind_robot(robot, work_frame, base_frame):
     wrist_joint_3 = robot.joint_angles[5]
 
     if wrist_joint_3 > 350:
@@ -52,6 +52,7 @@ def unwind_robot(robot):
     robot.coord_frame = work_frame
 
 def collect_data(
+        target_df,
         collect_dir,
         target_file,
         robot_tcp,
@@ -80,7 +81,7 @@ def collect_data(
 
     # save metadata (remove unneccesary non json serializable stuff) and save params
     meta = locals().copy()
-    del meta['collect_dir_name'], meta['target_df']
+    del meta['target_df']
     with open(os.path.join(collect_dir, 'meta.json'), 'w') as f:
         json.dump(meta, f)
 
@@ -142,10 +143,10 @@ def collect_data(
             cv2.imwrite(os.path.join(image_dir, sensor_image), frames[1,:,:,:])
 
             # raise tip before next move
-            robot.move_linear(new_pose + [0, 0, -5, 0, 0, 0])
+            robot.move_linear(new_pose + [0, 0, tap_depth, 0, 0, 0])
 
-            # check if robot is neearly tangled, if yes then unwind (becareful when making large jumps in angle)
-            unwind_robot(robot)
+            # check if robot is nearly tangled, if yes then unwind (be careful when making large jumps in angle)
+            unwind_robot(robot, work_frame, base_frame)
 
         # move to home position
         print("Moving to home position ...")

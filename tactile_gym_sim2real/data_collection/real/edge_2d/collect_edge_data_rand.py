@@ -46,14 +46,25 @@ def main(shuffle_data=False):
     # ====== data collection setup ========
     mode = 'tap'
     # mode = 'shear'
+    num_samples = 5000
 
     # set the work frame of the robot
-    robot_tcp  = [0, 0, 108.0, 0, 0, 0] # change to 101.0
+    robot_tcp  = [0, 0, 101.0, 0, 0, 0] # change to 101.0
     base_frame = [0, 0, 0, 0, 0, 0]
     home_pose  = [0, -451.0, 300, -180, 0, 0]
-    work_frame = [0, -451.0, 47.5, -180, 0, 0]
+    work_frame = [0, -451.0, 54.0, -180, 0, 0] # edge height = 52.0mm
     sensor_offset_ang = -48 # align camera with axis
-    tap_depth = -5
+    tap_depth = -5.0
+
+    # create a csv with poses to collect
+    poses_rng = [[0, -6, 3.0, 0, 0, -179], [0, 6, 5.0, 0, 0, 180]]
+
+    if mode == 'shear':
+        moves_rng = [[-5, -5, 0, -5, -5, -5], [5, 5, 0, 5, 5, 5]]
+    elif mode == 'tap':
+        moves_rng = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
+
+    obj_poses = [[0, 0, 0, 0, 0, sensor_offset_ang]]
 
     # experiment metadata
     home_dir          = os.path.join(os.path.dirname(__file__), '../data/edge_2d', mode)
@@ -61,20 +72,10 @@ def main(shuffle_data=False):
     collect_dir = os.path.join(home_dir, collect_dir_name)
     target_file = os.path.join(collect_dir, 'targets.csv')
 
-    # create a csv with poses to collect
-    num_samples = 100
-    poses_rng = [[0, -6, 3.5, 0, 0, -179], [0, 6, 5.5, 0, 0, 180]]
-
-    if mode == 'shear':
-        moves_rng = [[-5, -5, 0, -5, -5, -5], [5, 5, 0, 5, 5, 5]],
-    elif mode == 'tap':
-        moves_rng = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
-
-    obj_poses = [[0, 0, 0, 0, 0, sensor_offset_ang]]
-
     target_df = make_target_df(poses_rng, moves_rng, num_samples, obj_poses, target_file, shuffle_data)
 
     collect_data(
+        target_df,
         collect_dir,
         target_file,
         robot_tcp,

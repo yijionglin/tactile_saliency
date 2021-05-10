@@ -60,25 +60,17 @@ def main(shuffle_data=False):
 
     # ====== data collection setup ========
     mode = 'tap'
-
-    # experiment metadata
-    home_dir          = os.path.join(os.path.dirname(__file__), '../data/spherical_probe', mode)
-    collect_dir_name  = 'collect_rand_' + time.strftime('%m%d%H%M')
-    collect_dir = os.path.join(home_dir, collect_dir_name)
-    video_dir = os.path.join(collect_dir, 'videos')
-    image_dir = os.path.join(collect_dir, 'images')
-    target_file = os.path.join(collect_dir, 'targets.csv')
+    num_samples = 500 # per stimulus
 
     # set the work frame of the robot
     robot_tcp  = [0, 0, 88.5, 0, 0, 0]
     base_frame = [0, 0, 0, 0, 0, 0]
     home_pose  = [0, -451.0, 300, -180, 0, 0]
-    work_frame = [-15.75, -462, 47.5, -180, 0, 0] # probe is 45mm tall
+    work_frame = [-15.75, -462, 47.0, -180, 0, 0] # probe is 45mm tall
     sensor_offset_ang = -48 # align camera with axis
     tap_depth = -5
 
-    num_samples = 5
-    poses_rng = [[0, 0, 4.5, 0, 0, 0], [0, 0, 5.5, 0, 0, 0]] # 2-3mm penetration
+    poses_rng = [[0, 0, 4.0, 0, 0, 0], [0, 0, 5.0, 0, 0, 0]] # 2-3mm penetration
 
     # for now only do tap data
     moves_rng = [[0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0]]
@@ -96,9 +88,16 @@ def main(shuffle_data=False):
                  [ 0,  -60, 0, 0, 0, sensor_offset_ang],
                  [-60, -60, 0, 0, 0, sensor_offset_ang]]
 
+    # experiment metadata
+    home_dir          = os.path.join(os.path.dirname(__file__), '../data/spherical_probe', mode)
+    collect_dir_name  = 'collect_rand_' + time.strftime('%m%d%H%M')
+    collect_dir = os.path.join(home_dir, collect_dir_name)
+    target_file = os.path.join(collect_dir, 'targets.csv')
+
     target_df = make_target_df(poses_rng, moves_rng, num_samples, obj_poses, target_file, shuffle_data)
 
     collect_data(
+        target_df,
         collect_dir,
         target_file,
         robot_tcp,

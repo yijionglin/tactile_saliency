@@ -40,7 +40,7 @@ def setup_collect_dir(
     if og_collect_dir is None:
 
         obj_poses = [[0, 0, 0, 0, 0, 0]]
-        poses_rng = [[0, -6, 3.5, 0, 0, -179], [0, 6, 5.5, 0, 0, 180]]
+        poses_rng = [[0, -6, 3.0, 0, 0, -179], [0, 6, 5.0, 0, 0, 180]]
 
         if apply_shear:
             moves_rng = [[-5, -5, 0, -5, -5, -5], [5, 5, 0, 5, 5, 5]]

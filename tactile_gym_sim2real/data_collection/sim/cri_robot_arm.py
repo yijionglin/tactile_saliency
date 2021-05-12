@@ -53,10 +53,10 @@ class CRIRobotArm(Robot):
         self.arm.tcp_direct_workframe_move(targ_pos, targ_rpy)
 
         # slow but more realistic moves
-        self.blocking_move(max_steps=5000, constant_vel=0.00025)
+        # self.blocking_move(max_steps=5000, constant_vel=0.00025)
 
         # fast but unrealistic moves (bigger_moves = worse)
-        # self.blocking_move(max_steps=1000, constant_vel=None)
+        self.blocking_move(max_steps=1000, constant_vel=None)
 
     def process_sensor(self):
         """

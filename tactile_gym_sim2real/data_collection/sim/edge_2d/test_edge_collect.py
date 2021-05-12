@@ -17,11 +17,11 @@ apply_shear = False
 collect_dir_name = 'temp'
 
 # use csv or not
-# og_collect_dir = os.path.join(
-#     os.path.dirname(__file__),
-#     '../../real/data/edge_2d/tap/csv_val'
-# )
-og_collect_dir = None
+og_collect_dir = os.path.join(
+    os.path.dirname(__file__),
+    '../../real/data/edge_2d/tap/csv_val'
+)
+# og_collect_dir = None
 
 # setup stimulus
 stimulus_pos = [0.6, 0.0, 0.0125]

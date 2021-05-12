@@ -1,4 +1,5 @@
 import os
+import time
 import pybullet as p
 import pybullet_utils.bullet_client as bc
 import numpy as np
@@ -236,8 +237,8 @@ def collect_data(
         cv2.imwrite(image_outfile, img)
 
         # debugging
-        robot.arm.draw_workframe()
-
+        # robot.arm.draw_workframe()
+        # time.sleep(1)
 
 
 def quick_collect_csv(
@@ -252,7 +253,7 @@ def quick_collect_csv(
 ):
 
     # shared params
-    show_gui = True
+    show_gui = False
     show_tactile = True
     shuffle_data = False
 

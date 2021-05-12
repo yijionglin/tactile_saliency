@@ -30,7 +30,7 @@ def setup_collect_dir(num_samples=100, apply_shear=True, shuffle_data=False, og_
     if og_collect_dir is None:
 
         obj_poses = [[0, 0, 0, 0, 0, 0]]
-        poses_rng = [[0, 0, 3.5, -15, -15, 0], [0, 0, 5.5, 15, 15, 0]]
+        poses_rng = [[0, 0, 2.0, -15, -15, 0], [0, 0, 5.0, 15, 15, 0]]
 
         if apply_shear:
             moves_rng = [[-5, -5, 0, -5, -5, -5], [5, 5, 0, 5, 5, 5]]

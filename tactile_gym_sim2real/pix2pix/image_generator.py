@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import time
 import cv2
 import pandas as pd
 import torch

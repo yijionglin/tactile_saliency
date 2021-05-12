@@ -2,18 +2,12 @@
 
 from __future__ import division, print_function, unicode_literals
 
-import os
 import numpy as np
-import pandas as pd
 import scipy
 import cv2
-import matplotlib.pyplot as plt
-import pickle
 from skimage.util import random_noise
 from scipy.ndimage import zoom
 import json
-import itertools
-import time
 
 # Save the dictionaries
 def save_json_obj(obj, name):
@@ -127,8 +121,8 @@ def process_image(image, gray=True, bbox=None, dims=None, stdiz=False, normlz=Fa
     return image
 
 def threshold_image(image):
-    image = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY,11,-30)
-    # image = cv2.adaptiveThreshold(image,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,11,-20)
+    image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, -30)
+    # image = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, -20)
     return image
 
 # Change brightness levels

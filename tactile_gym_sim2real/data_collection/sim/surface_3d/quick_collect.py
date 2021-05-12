@@ -26,7 +26,7 @@ stim_path = os.path.join(
 
 # define parameters to iterate over in collection loops
 image_sizes = [[64, 64], [128, 128], [256, 256]]
-shear_types = [False, True]
+shear_types = [False]
 
 # run the collection
 quick_collect_csv(

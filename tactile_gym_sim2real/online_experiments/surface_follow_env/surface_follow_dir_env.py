@@ -113,8 +113,12 @@ class SurfaceFollowDirEnv(gym.Env):
         self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, rl_image_size=self.image_size)
 
         # load saved border image files
-        border_gray_savefile = os.path.join( getBorderImagesPath(), 'standard', str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_gray.npy')
-        border_mask_savefile = os.path.join( getBorderImagesPath(), 'standard', str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_mask.npy')
+        ref_images_path = add_assets_path(
+            os.path.join('robot_assets', 'tactip', 'tactip_reference_images', 'standard')
+        )
+
+        border_gray_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_gray.npy')
+        border_mask_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_mask.npy')
         self.border_gray = np.load(border_gray_savefile)
         self.border_mask = np.load(border_mask_savefile)
 

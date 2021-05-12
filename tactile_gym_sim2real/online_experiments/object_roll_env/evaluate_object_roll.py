@@ -9,13 +9,21 @@ n_steps = 100
 show_plot = False
 
 # rl models
-# rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/object_roll/ppo/keep/tactile_fullrand_pos/')
-# rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/object_roll/ppo/keep/tactile_fullrand_vel/')
-rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/object_roll/ppo/keep/tactile_fullrand_vel_actlim_0.25/')
+rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/object_roll/rad_ppo/tactile/')
 
 # gan models
-gan_model_dir = os.path.join(os.path.dirname(__file__), '../trained_gans/[spherical_probe]/256x256_[tap]_250epochs_thresh/')
+# image_size_str = '64x64'
+# image_size_str = '128x128'
+image_size_str = '256x256'
 
+# data_type = 'tap'
+data_type = 'shear'
+
+# gan models
+gan_model_dir = os.path.join(
+    os.path.dirname(__file__),
+    'trained_gans/[spherical_probe]/' + image_size_str + '_[' + data_type + ']_250epochs/'
+)
 
 # run the evaluation
 final_evaluation(ObjectRollEnv, rl_model_dir, gan_model_dir, n_eval_episodes, n_steps, show_plot)

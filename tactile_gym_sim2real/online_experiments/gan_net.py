@@ -6,32 +6,25 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-# TODO: do this but better
-# from tactile_gym_sim2real.pix2pix.gan_models.models_64_auxrl import *
-# from tactile_gym_sim2real.pix2pix.gan_models.models_128_auxrl import *
-# from tactile_gym_sim2real.pix2pix.gan_models.models_256_auxrl import *
-from tactile_gym_sim2real.pix2pix.gan_models.models_256 import *
-
-from tactile_gym_sim2real.common_utils import *
 from tactile_gym_sim2real.image_transforms import *
-
 from tactile_gym.utils.general_utils import load_json_obj
 
 class pix2pix_GAN():
 
-    def __init__(self, gan_model_dir, rl_image_size=[64,64]):
+    def __init__(self, gan_model_dir, Generator, rl_image_size=[64,64]):
 
         self.rl_image_size = rl_image_size
         self.params = load_json_obj(os.path.join(gan_model_dir, 'augmentation_params'))
 
         # overide some augmentation params as we dont want them when generating new data
+        self.params['bbox'] = [80, 25, 530, 475] # TODO: make sure correct
         self.params['rshift'] = None
         self.params['rzoom'] = None
         self.params['brightlims'] = None
         self.params['noise_var'] = None
 
         # Initialize generator and discriminator
-        generator = GeneratorUNet(in_channels=1, out_channels=1)
+        generator = Generator(in_channels=1, out_channels=1)
 
         # configure gpu use
         cuda = True if torch.cuda.is_available() else False
@@ -51,11 +44,15 @@ class pix2pix_GAN():
     def gen_sim_image(self, real_image):
 
         # preprocess/augment image
-        processed_real_image = process_image(real_image, gray=True, bbox=[80,25,530,475], dims=self.params['dims'],
-                                             stdiz=self.params['stdiz'], normlz=self.params['normlz'],
-                                             rshift=self.params['rshift'], rzoom=self.params['rzoom'],
-                                             thresh=self.params['thresh'], add_axis=False,
-                                             brightlims=self.params['brightlims'], noise_var=self.params['noise_var'])
+        processed_real_image = process_image(
+            real_image, gray=True,
+            bbox=self.params['bbox'], dims=self.params['dims'],
+            stdiz=self.params['stdiz'], normlz=self.params['normlz'],
+            rshift=self.params['rshift'], rzoom=self.params['rzoom'],
+            thresh=self.params['thresh'], add_axis=False,
+            brightlims=self.params['brightlims'], noise_var=self.params['noise_var']
+        )
+
         # setup the processed image for plotting
         processed_real_image_plot = (np.clip(processed_real_image, 0, 1)*255).astype(np.uint8) # convert to image format
 

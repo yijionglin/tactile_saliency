@@ -7,7 +7,19 @@ def main():
 
     num_iter = 4
     max_steps = 10
-    gan_model_dir = os.path.join(os.path.dirname(__file__), '../trained_gans/[spherical_probe]/256x256_[tap]_250epochs_thresh/')
+
+    # image_size_str = '64x64'
+    # image_size_str = '128x128'
+    image_size_str = '256x256'
+
+    data_type = 'tap'
+    # data_type = 'shear'
+
+    # gan models
+    gan_model_dir = os.path.join(
+        os.path.dirname(__file__),
+        'trained_gans/[spherical_probe]/' + image_size_str + '_[' + data_type + ']_250epochs/'
+    )
 
     env_modes = {"movement_mode": "xy",
                  "control_mode": "TCP_velocity_control",

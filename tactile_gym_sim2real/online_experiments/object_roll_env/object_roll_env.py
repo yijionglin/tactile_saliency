@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 from tactile_gym_sim2real.online_experiments.ur5_tactip import UR5_TacTip
 from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
 
-from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.assets import get_assets_path, add_assets_path
 
 class ObjectRollEnv(gym.Env):
 
@@ -76,8 +76,12 @@ class ObjectRollEnv(gym.Env):
         self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, rl_image_size=self.image_size)
 
         # load saved border image files
-        border_gray_savefile = os.path.join( getBorderImagesPath(), 'flat', str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_gray.npy')
-        border_mask_savefile = os.path.join( getBorderImagesPath(), 'flat', str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_mask.npy')
+        ref_images_path = add_assets_path(
+            os.path.join('robot_assets', 'tactip', 'tactip_reference_images', 'flat')
+        )
+
+        border_gray_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_gray.npy')
+        border_mask_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_mask.npy')
         self.border_gray = np.load(border_gray_savefile)
         self.border_mask = np.load(border_mask_savefile)
 

@@ -13,23 +13,22 @@ import matplotlib.pyplot as plt
 from tactile_gym_sim2real.online_experiments.ur5_tactip import UR5_TacTip
 from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
 
-from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.assets import get_assets_path, add_assets_path
 
 class EdgeFollowEnv(gym.Env):
 
     def __init__(self,
                  env_modes,
                  gan_model_dir,
+                 GanGenerator,
                  max_steps=1000,
-                 image_size=[64,64],
-                 add_border=False,
+                 rl_image_size=[64,64],
                  show_plot=True):
 
         self._observation = []
         self._env_step_counter = 0
         self._max_steps = max_steps
-        self.image_size = image_size
-        self.add_border = add_border
+        self.rl_image_size = rl_image_size
         self.show_plot = show_plot
         self.first_run = True
         self.tactip_type = 'standard'
@@ -37,16 +36,13 @@ class EdgeFollowEnv(gym.Env):
         # for incrementing workframe each episode
         self.reset_counter = -1
 
-        self.record_video = True
+        self.record_video = False
         if self.record_video:
             self.video_frames = []
 
         # define the movement mode used in the saved model
         self.movement_mode = env_modes['movement_mode']
         self.control_mode  = env_modes['control_mode']
-
-        # self.control_mode  = 'TCP_position_control'
-        # self.control_mode  = 'TCP_velocity_control'
 
         # set the workframe for the tool center point origin
         self.work_frame = [0.0, -450.0, 49.5, -180, 0, 0]   # square/circle/clover near edge
@@ -73,29 +69,24 @@ class EdgeFollowEnv(gym.Env):
         self.setup_action_space()
 
         # load the trained pix2pix GAN network
-        self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, rl_image_size=self.image_size)
+        self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, Generator=GanGenerator, rl_image_size=self.rl_image_size)
 
         # load saved border image files
         ref_images_path = add_assets_path(
             os.path.join('robot_assets', 'tactip', 'tactip_reference_images', 'standard')
         )
 
-        border_gray_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_gray.npy')
-        border_mask_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_mask.npy')
+        border_gray_savefile = os.path.join( ref_images_path, str(self.rl_image_size[0]) + 'x' + str(self.rl_image_size[0]), 'nodef_gray.npy')
+        border_mask_savefile = os.path.join( ref_images_path, str(self.rl_image_size[0]) + 'x' + str(self.rl_image_size[0]), 'border_mask.npy')
         self.border_gray = np.load(border_gray_savefile)
         self.border_mask = np.load(border_mask_savefile)
 
-        # set up plot for generated image
+        # setup plot for rendering
         if self.show_plot:
-            plt.ion()
-            plot_data = np.random.rand(self.image_size[0], self.image_size[1])
-            self._fig, self._ax = plt.subplots(1,2, figsize=(10,5))
-            self._real_image_window = self._ax[0].imshow(plot_data, interpolation='none', animated=True, label="tactip_view", vmin=0, vmax=255, cmap='gray')
-            self._gen_image_window  = self._ax[1].imshow(plot_data, interpolation='none', animated=True, label="tactip_view", vmin=0, vmax=255, cmap='gray')
-            self._ax[0].set_title('Processed Real Image')
-            self._ax[1].set_title('Generated Sim Image')
-            plt.tight_layout()
-            plt.pause(0.001)
+            cv2.namedWindow('real_vs_generated')
+            self._render_closed = False
+        else:
+            self._render_closed = True
 
         # setup the UR5
         self._UR5 = UR5_TacTip(control_mode=self.control_mode,
@@ -177,11 +168,13 @@ class EdgeFollowEnv(gym.Env):
     def setup_observation_space(self):
 
         # image dimensions for sensor
-        self.obs_dim = self.get_obs_dim()
-        self.observation_space = gym.spaces.Box(low=0,
-                                                high=255,
-                                                shape=self.obs_dim,
-                                                dtype=np.uint8)
+        self.tactile_obs_dim = self.get_tactile_obs().shape
+
+        self.observation_space = gym.spaces.Dict({
+            'tactile': gym.spaces.Box(
+                low=0, high=255, shape=self.tactile_obs_dim, dtype=np.uint8
+            )
+        })
 
     def reset(self):
 
@@ -201,7 +194,7 @@ class EdgeFollowEnv(gym.Env):
         self._UR5.reset()
 
         # get the starting observation
-        self._observation = self.get_extended_observation()
+        self._observation = self.get_observation()
 
         # use to avoid doing things on first call to reset
         self.first_run = False
@@ -286,7 +279,7 @@ class EdgeFollowEnv(gym.Env):
         # pull info after step
         done = self.termination()
         reward = self.reward()
-        self._observation = np.array(self.get_extended_observation())
+        self._observation = self.get_observation()
 
         return self._observation, reward, done, {}
 
@@ -299,7 +292,7 @@ class EdgeFollowEnv(gym.Env):
     def reward(self):
         return 0
 
-    def get_extended_observation(self):
+    def get_tactile_obs(self):
         # get image from sensor
         observation = self._UR5.get_observation()
 
@@ -307,21 +300,13 @@ class EdgeFollowEnv(gym.Env):
         generated_sim_image, processed_real_image = self.GAN.gen_sim_image(observation)
 
         # add border to image
-        if self.add_border:
-            generated_sim_image[self.border_mask==1] = self.border_gray[self.border_mask==1]
+        generated_sim_image[self.border_mask==1] = self.border_gray[self.border_mask==1]
 
         # add a channel axis at end
         generated_sim_image = generated_sim_image[..., np.newaxis]
 
         # plot data
-        if self.show_plot:
-            self._real_image_window.set_data(processed_real_image)
-            self._gen_image_window.set_data(generated_sim_image)
-            self._ax[0].plot([0])
-            self._ax[1].plot([0])
-            plt.pause(0.001)
-
-        if self.record_video:
+        if not self._render_closed:
             # resize to 256, 256 for video
             resized_real_image = cv2.resize(processed_real_image,
                                            (256,256),
@@ -330,9 +315,24 @@ class EdgeFollowEnv(gym.Env):
                                            (256,256),
                                            interpolation=cv2.INTER_NEAREST)
             frame = np.hstack([resized_real_image, resized_sim_image])
-            self.video_frames.append(frame)
+            cv2.imshow('real_vs_generated', frame)
+            if cv2.waitKey(1) & 0xFF == 27:
+                cv2.destroyWindow('real_vs_generated')
+                self._render_closed = True
+
+            if self.record_video:
+                self.video_frames.append(frame)
 
         return generated_sim_image
+
+    def get_observation(self):
+        """
+        Returns the observation dependent on which mode is set.
+        """
+        # init obs dict
+        observation = {}
+        observation['tactile'] = self.get_tactile_obs()
+        return observation
 
     def get_act_dim(self):
         if self.movement_mode == 'xy':
@@ -345,6 +345,3 @@ class EdgeFollowEnv(gym.Env):
             return 4
         else:
             sys.exit('Incorrect movement mode specified: {}'.format(self.movement_mode))
-
-    def get_obs_dim(self):
-        return self.get_extended_observation().shape

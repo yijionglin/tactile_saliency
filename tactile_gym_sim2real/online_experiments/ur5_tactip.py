@@ -154,27 +154,7 @@ class UR5_TacTip:
         self.work_frame = frame
         self.robot.coord_frame = self.work_frame
 
-    def unwind_robot(self):
-        wrist_joint_3 = self.robot.joint_angles[5]
-
-        if wrist_joint_3 > 315:
-            unwind = True
-            direction = -1
-        elif wrist_joint_3 < -315:
-            unwind = True
-            direction = 1
-        else:
-            unwind = False
-
-        if unwind == True:
-            print('wrist joint 3 too close to robot limts: {}, unwinding...'.format(wrist_joint_3))
-            for i in range(4):
-                self.robot.coord_frame = self.base_frame
-                self.robot.coord_frame = self.robot.pose
-                self.robot.move_linear([0,0,0,0,0,direction*90])
-            self.robot.coord_frame = self.work_frame
-
-    def reset(self):
+    def reset(self, reset_to_origin=True):
 
         # if velocity move still executing then stop
         if self.control_mode == 'TCP_velocity_control':
@@ -187,20 +167,16 @@ class UR5_TacTip:
         self.current_TCP_pose = self.robot.pose
 
         # move to origin of work frame
-        # if self.first_run:
-        #     self.first_run = False
+        if reset_to_origin:
+            print("Moving to work frame origin ...")
+            self.robot.linear_speed = 30
+            self.robot.move_linear([0, 0, -10, 0, 0, self.sensor_offset_ang]) # move sensor to just above workframe
 
-        print("Moving to work frame origin ...")
-        self.unwind_robot()
-        self.robot.linear_speed = 30
-        self.robot.move_linear([0, 0, -10, 0, 0, self.sensor_offset_ang]) # move sensor to just above workframe
+            self.robot.linear_speed = 10
+            self.robot.move_linear(self.rel_TCP_pose)
 
-        self.robot.linear_speed = 10
-        self.robot.move_linear(self.rel_TCP_pose)
-
-        # set robot speed for movement
-        self.robot.linear_speed = 30
-
+            # set robot speed for movement
+            self.robot.linear_speed = 30
 
         # start the velocity worker
         if self.control_mode == 'TCP_velocity_control':
@@ -294,7 +270,7 @@ class UR5_TacTip:
         Transforms a vector in world frame to a vector in work frame.
         """
         worldframe_vec = np.array(worldframe_vec)
-        
+
         transformation_matrix = cri.transforms.euler2mat(self.work_frame, axes='rxyz')
         rotation_matrix = transformation_matrix[:3,:3]
 

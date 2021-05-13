@@ -1,3 +1,4 @@
+import time
 import os
 import cv2
 import imageio
@@ -23,9 +24,9 @@ if record_video:
     video_frames = []
 
 
-image_size = [64,64]
+# image_size = [64,64]
 # image_size = [128,128]
-# image_size = [256,256]
+image_size = [256,256]
 
 # set which gan
 # dataset = 'edge_2d'
@@ -78,7 +79,6 @@ sensor = make_sensor()
 
 cv2.namedWindow("GAN_display")
 while True:
-
     # pull raw frames from camera
     raw_real_frames = sensor.process(num_frames=1)
     raw_real_image = raw_real_frames[0]

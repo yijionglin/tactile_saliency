@@ -13,23 +13,22 @@ import matplotlib.pyplot as plt
 from tactile_gym_sim2real.online_experiments.ur5_tactip import UR5_TacTip
 from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
 
-from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.assets import get_assets_path, add_assets_path
 
 class ObjectRollEnv(gym.Env):
 
     def __init__(self,
                  env_modes,
                  gan_model_dir,
+                 GanGenerator,
                  max_steps=1000,
-                 image_size=[64,64],
-                 add_border=False,
+                 rl_image_size=[64,64],
                  show_plot=True):
 
         self._observation = []
         self._env_step_counter = 0
         self._max_steps = max_steps
-        self.image_size = image_size
-        self.add_border = add_border
+        self.rl_image_size = rl_image_size
         self.show_plot = show_plot
         self.first_run = True
         self.tactip_type = 'flat'
@@ -46,13 +45,14 @@ class ObjectRollEnv(gym.Env):
         # self.task = 'from_hand'
         self.task = 'from_pad'
         self.randomise_goal = True
+        self.reset_to_origin = False
 
         # set the workframe for the tool center point origin
         if self.task == 'from_hand':
             self.work_frame = [0.0, -450.0, 200, -180, 0, 0]
         elif self.task == 'from_pad':
             # be careful as close to base
-            self.work_frame = [0.0, -450.0, 18, -180, 0, 0] # 8mm
+            self.work_frame = [0.0, -450.0, 19, -180, 0, 0] # 8mm
             # self.work_frame = [0.0, -450.0, 17, -180, 0, 0] # 6mm
             # self.work_frame = [0.0, -450.0, 16, -180, 0, 0] # 4mm
             # self.work_frame = [0.0, -450.0, 15, -180, 0, 0] # 2mm
@@ -73,25 +73,24 @@ class ObjectRollEnv(gym.Env):
         self.setup_action_space()
 
         # load the trained pix2pix GAN network
-        self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, rl_image_size=self.image_size)
+        self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, Generator=GanGenerator, rl_image_size=self.rl_image_size)
 
         # load saved border image files
-        border_gray_savefile = os.path.join( getBorderImagesPath(), 'flat', str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_gray.npy')
-        border_mask_savefile = os.path.join( getBorderImagesPath(), 'flat', str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_mask.npy')
+        ref_images_path = add_assets_path(
+            os.path.join('robot_assets', 'tactip', 'tactip_reference_images', 'flat')
+        )
+
+        border_gray_savefile = os.path.join( ref_images_path, str(self.rl_image_size[0]) + 'x' + str(self.rl_image_size[0]), 'nodef_gray.npy')
+        border_mask_savefile = os.path.join( ref_images_path, str(self.rl_image_size[0]) + 'x' + str(self.rl_image_size[0]), 'border_mask.npy')
         self.border_gray = np.load(border_gray_savefile)
         self.border_mask = np.load(border_mask_savefile)
 
-        # set up plot for generated image
+        # setup plot for rendering
         if self.show_plot:
-            plt.ion()
-            plot_data = np.random.rand(self.image_size[0], self.image_size[1])
-            self._fig, self._ax = plt.subplots(1,2, figsize=(10,5))
-            self._real_image_window = self._ax[0].imshow(plot_data, interpolation='none', animated=True, label="tactip_view", vmin=0, vmax=255, cmap='gray')
-            self._gen_image_window  = self._ax[1].imshow(plot_data, interpolation='none', animated=True, label="tactip_view", vmin=0, vmax=255, cmap='gray')
-            self._ax[0].set_title('Processed Real Image')
-            self._ax[1].set_title('Generated Sim Image')
-            plt.tight_layout()
-            plt.pause(0.001)
+            cv2.namedWindow('real_vs_generated')
+            self._render_closed = False
+        else:
+            self._render_closed = True
 
         # setup the UR5
         self._UR5 = UR5_TacTip(control_mode=self.control_mode,
@@ -152,7 +151,7 @@ class ObjectRollEnv(gym.Env):
         elif self.control_mode == 'TCP_velocity_control':
 
             # approx sim_vel / 1.6
-            max_pos_vel = 2.5                # mm/s
+            max_pos_vel = 5                # mm/s
             max_ang_vel = 0  * (np.pi/180) # rad/s
 
             self.x_act_min, self.x_act_max = -max_pos_vel, max_pos_vel
@@ -172,11 +171,17 @@ class ObjectRollEnv(gym.Env):
     def setup_observation_space(self):
 
         # image dimensions for sensor
-        self.obs_dim = self.get_obs_dim()
-        self.observation_space = gym.spaces.Box(low=-np.inf,
-                                                high=np.inf,
-                                                shape=self.obs_dim,
-                                                dtype=np.float32)
+        self.tactile_obs_dim = self.get_tactile_obs().shape
+        self.feature_obs_dim = self.get_feature_obs().shape
+
+        self.observation_space = gym.spaces.Dict({
+            'tactile': gym.spaces.Box(
+                low=0, high=255, shape=self.tactile_obs_dim, dtype=np.uint8
+            ),
+            'extended_feature': gym.spaces.Box(
+                low=-np.inf, high=np.inf, shape=self.feature_obs_dim, dtype=np.float32
+            )
+        })
 
     def setup_goal(self):
         # for now just place in center
@@ -189,7 +194,7 @@ class ObjectRollEnv(gym.Env):
             rad = np.random.uniform(0, 1)
 
             # set the limit of the radius
-            rad_lim = 0.0075
+            rad_lim = 0.01
 
             # use sqrt r to get uniform disk spread
             x = np.sqrt(rad)*np.cos(ang) * rad_lim
@@ -201,17 +206,20 @@ class ObjectRollEnv(gym.Env):
         self._env_step_counter = 0
 
         # raise arm to avoid moving directly to workframe pos potentially hitting objects
-        if not self.first_run:
+        if not self.first_run and self.reset_to_origin:
             self._UR5.raise_tip(dist=50)
 
         # reset the ur5 arm
-        self._UR5.reset()
+        if self.first_run:
+            self._UR5.reset(reset_to_origin=True)
+        else:
+            self._UR5.reset(reset_to_origin=self.reset_to_origin)
 
         # reset the goal
         self.setup_goal()
 
         # get the starting observation
-        self._observation = self.get_extended_observation()
+        self._observation = self.get_observation()
 
         # use to avoid doing things on first call to reset
         self.first_run = False
@@ -275,7 +283,7 @@ class ObjectRollEnv(gym.Env):
         # pull info after step
         done = self.termination()
         reward = self.reward()
-        self._observation = np.array(self.get_extended_observation())
+        self._observation = self.get_observation()
 
         return self._observation, reward, done, {}
 
@@ -301,11 +309,11 @@ class ObjectRollEnv(gym.Env):
         norm_tcp_pos_x = (self.goal_pos_tcp[0] - min) / (max - min)
         norm_tcp_pos_y = (self.goal_pos_tcp[1] - min) / (max - min)
 
-        goal_coordinates = (int(norm_tcp_pos_x*self.image_size[0]),
-                            int(norm_tcp_pos_y*self.image_size[1]))
+        goal_coordinates = (int(norm_tcp_pos_x*self.rl_image_size[0]),
+                            int(norm_tcp_pos_y*self.rl_image_size[1]))
 
         # Draw a circle at the goal
-        circle_rad = int(self.image_size[0] / 32)
+        circle_rad = int(self.rl_image_size[0] / 32)
         # overlay_img = cv2.circle(tactile_image, goal_coordinates, radius=circle_rad, color=(255,255,255), thickness=-1)
         overlay_img = cv2.drawMarker(tactile_image,
                                      goal_coordinates,
@@ -319,7 +327,7 @@ class ObjectRollEnv(gym.Env):
 
         return overlay_img
 
-    def get_extended_observation(self):
+    def get_tactile_obs(self):
         # get image from sensor
         observation = self._UR5.get_observation()
 
@@ -327,50 +335,53 @@ class ObjectRollEnv(gym.Env):
         generated_sim_image, processed_real_image = self.GAN.gen_sim_image(observation)
 
         # add border to image
-        if self.add_border:
-            generated_sim_image[self.border_mask==1] = self.border_gray[self.border_mask==1]
+        generated_sim_image[self.border_mask==1] = self.border_gray[self.border_mask==1]
 
         # add a channel axis at end
         generated_sim_image = generated_sim_image[..., np.newaxis]
 
-        # get image with target in approximate position
-        overlay_sim_image = self.overlay_goal_on_image(generated_sim_image)
-
         # plot data
-        if self.show_plot:
+        if not self._render_closed:
 
-            self._real_image_window.set_data(processed_real_image)
-            self._gen_image_window.set_data(overlay_sim_image)
-            self._ax[0].plot([0])
-            self._ax[1].plot([0])
-            plt.pause(0.001)
+            # get image with target in approximate position
+            overlay_sim_image = self.overlay_goal_on_image(generated_sim_image)
 
-        if self.record_video:
             # resize to 256, 256 for video
-            resized_sim_image = cv2.resize(overlay_sim_image,
-                                           (256,256),
-                                           interpolation=cv2.INTER_NEAREST)
             resized_real_image = cv2.resize(processed_real_image,
                                            (256,256),
                                            interpolation=cv2.INTER_NEAREST)
-
+            resized_sim_image = cv2.resize(overlay_sim_image,
+                                           (256,256),
+                                           interpolation=cv2.INTER_NEAREST)
             frame = np.hstack([resized_real_image, resized_sim_image])
-            self.video_frames.append(frame)
+            cv2.imshow('real_vs_generated', frame)
+            if cv2.waitKey(1) & 0xFF == 27:
+                cv2.destroyWindow('real_vs_generated')
+                self._render_closed = True
 
-        # extend tactile image with goal location
-        num_features = len(self.goal_pos_tcp)
-        padded_feature_array = np.zeros(self.image_size)
-        padded_feature_array[0, :num_features] = self.goal_pos_tcp
+            if self.record_video:
+                self.video_frames.append(frame)
 
-        extended_observation = np.dstack([generated_sim_image/255.0, padded_feature_array])
+        return generated_sim_image
 
-        return extended_observation
+    def get_feature_obs(self):
+        """
+        Get feature to extend current observations.
+        """
+        return np.array(self.goal_pos_tcp)
+
+    def get_observation(self):
+        """
+        Returns the observation
+        """
+        # init obs dict
+        observation = {}
+        observation['tactile'] = self.get_tactile_obs()
+        observation['extended_feature'] = self.get_feature_obs()
+        return observation
 
     def get_act_dim(self):
         if self.movement_mode == 'xy':
             return 2
         else:
             sys.exit('Incorrect movement mode specified: {}'.format(self.movement_mode))
-
-    def get_obs_dim(self):
-        return self.get_extended_observation().shape

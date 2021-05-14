@@ -44,8 +44,8 @@ def make_target_df(poses_rng, moves_rng, num_poses, obj_poses, target_file, shuf
 def main(shuffle_data=False):
 
     # ====== data collection setup ========
-    mode = 'tap'
-    # mode = 'shear'
+    # mode = 'tap'
+    mode = 'shear'
     num_samples = 5000
 
     # set the work frame of the robot

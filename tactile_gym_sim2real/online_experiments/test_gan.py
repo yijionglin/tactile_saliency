@@ -1,3 +1,4 @@
+import time
 import os
 import cv2
 import imageio
@@ -22,19 +23,26 @@ record_video = False
 if record_video:
     video_frames = []
 
+
+# image_size = [64,64]
+# image_size = [128,128]
+image_size = [256,256]
+
+# set which gan
+# dataset = 'edge_2d'
+dataset = 'surface_3d'
+# dataset = 'spherical_probe'
+
+data_type = 'tap'
+# data_type = 'shear'
+
+image_size_str = str(image_size[0]) + 'x' + str(image_size[1])
+
 # gan models
-# gan_model_dir = os.path.join(os.path.dirname(__file__), 'trained_gans/[edge_2d]/256x256_[tap]_500epochs/')
-gan_model_dir = os.path.join(os.path.dirname(__file__), 'trained_gans/[edge_2d]/256x256_[shear]_500epochs/')
-# gan_model_dir = os.path.join(os.path.dirname(__file__), 'trained_gans/[surface_3d]/256x256_[tap]_500epochs/')
-# gan_model_dir = os.path.join(os.path.dirname(__file__), 'trained_gans/[surface_3d]/256x256_[shear]_500epochs/')
-
-# gan_model_dir = os.path.join(os.path.dirname(__file__), 'trained_gans/[edge_2d,surface_3d]/256x256_[tap]_250epochs/')
-# gan_model_dir = os.path.join(os.path.dirname(__file__), 'trained_gans/[edge_2d,surface_3d]/256x256_[shear]_250epochs/')
-
-# gan_model_dir = os.path.join(os.path.dirname(__file__), 'trained_gans/[spherical_probe]/256x256_[tap]_250epochs_thresh/')
-
-# home pc
-# gan_model_dir = os.path.join(os.path.dirname(__file__), '../pix2pix/saved_models/[surface_3d]/256x256_[shear]_500epochs/')
+gan_model_dir = os.path.join(
+    os.path.dirname(__file__),
+    'trained_gans/[' + dataset + ']/' + image_size_str + '_[' + data_type + ']_250epochs/'
+)
 
 # load the gan params and overide some augmentation params as we dont want them when generating new data
 gan_params = load_json_obj(os.path.join(gan_model_dir, 'augmentation_params'))
@@ -43,27 +51,35 @@ gan_params['rzoom'] = None
 gan_params['brightlims'] = None
 gan_params['noise_var'] = None
 
-# load the trained pix2pix GAN network
-image_size = [256,256]
-add_border = True
-GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, rl_image_size=image_size)
+# import the correct sized generator
+if image_size == [64,64]:
+    from tactile_gym_sim2real.pix2pix.gan_models.models_64 import GeneratorUNet
+if image_size == [128,128]:
+    from tactile_gym_sim2real.pix2pix.gan_models.models_128 import GeneratorUNet
+if image_size == [256,256]:
+    from tactile_gym_sim2real.pix2pix.gan_models.models_256 import GeneratorUNet
 
 # load saved border image files
-ref_images_path = add_assets_path(
-    os.path.join('robot_assets','tactip','tactip_reference_images')
-)
+add_border = True
+if add_border:
+    ref_images_path = add_assets_path(
+        os.path.join('robot_assets','tactip','tactip_reference_images')
+    )
 
-border_gray_savefile = os.path.join( ref_images_path, 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'nodef_gray.npy')
-border_mask_savefile = os.path.join( ref_images_path, 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'border_mask.npy')
-border_gray = np.load(border_gray_savefile)
-border_mask = np.load(border_mask_savefile)
+    border_gray_savefile = os.path.join( ref_images_path, 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'nodef_gray.npy')
+    border_mask_savefile = os.path.join( ref_images_path, 'standard', str(image_size[0]) + 'x' + str(image_size[0]), 'border_mask.npy')
+    border_gray = np.load(border_gray_savefile)
+    border_mask = np.load(border_mask_savefile)
+
+# init the GAN
+GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, Generator=GeneratorUNet, rl_image_size=image_size)
 
 # init the sensor
 sensor = make_sensor()
 
 cv2.namedWindow("GAN_display")
 while True:
-
+    # pull raw frames from camera
     raw_real_frames = sensor.process(num_frames=1)
     raw_real_image = raw_real_frames[0]
 
@@ -81,7 +97,6 @@ while True:
     # (which is usually normalised before inputting into network)
     processed_real_image = (processed_real_image/255).astype(np.float32) # convert to image format
     generated_sim_image  = (generated_sim_image/255).astype(np.float32) # convert to image format
-
 
     # create an overlay of the two images
     overlay_image = cv2.addWeighted(processed_real_image, 0.25, generated_sim_image, 0.9, 0)[...,np.newaxis]

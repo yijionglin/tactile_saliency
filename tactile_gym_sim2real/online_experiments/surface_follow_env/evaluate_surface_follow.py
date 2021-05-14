@@ -5,22 +5,50 @@ from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_eval
 
 # evaluate params
 n_eval_episodes = 1
-n_steps = 400
-show_plot = False
+n_steps = 100
+show_plot = True
 
 # rl models
-# prev best
-# rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/surface_follow_dir/ppo/update/128_yzr/')
-# rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/surface_follow_dir/ppo/update/128_xyzrp/')
+rl_model_dir = os.path.join(
+    os.path.dirname(__file__),
+    "../trained_rl_networks",
+    'surface_follow-v0',
+    'rad_ppo',
+    'tactile'
+)
 
-# rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/surface_follow_dir/ppo/keep/128_xyzRxRy_pos/')
-rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/surface_follow_dir/ppo/keep/128_xyzRxRy_vel/')
-# rl_model_dir = os.path.join(os.path.dirname(__file__), '../trained_rl_networks/surface_follow_dir/ppo/keep/128_xyzRxRy_vel_actlim_0.25/')
+# select which gan
+dataset = 'surface_3d'
 
-# gan models
-# gan_model_dir = os.path.join(os.path.dirname(__file__), '../trained_gans/[surface_3d]/256x256_[tap]_500epochs/')
-gan_model_dir = os.path.join(os.path.dirname(__file__), '../trained_gans/[surface_3d]/256x256_[shear]_500epochs/')
-# gan_model_dir = os.path.join(os.path.dirname(__file__), '../trained_gans/[edge_2d,surface_3d]/256x256_[shear]_250epochs/')
+data_type = 'tap'
+# data_type = 'shear'
+
+# gan_image_size = [64, 64]
+gan_image_size = [128, 128]
+# gan_image_size = [256, 256]
+gan_image_size_str = str(gan_image_size[0]) + 'x' + str(gan_image_size[1])
+
+# get the dir for the saved gan
+gan_model_dir = os.path.join(
+    os.path.dirname(__file__),
+    '../trained_gans/[' + dataset + ']/' + gan_image_size_str + '_[' + data_type + ']_250epochs/'
+)
+
+# import the correct sized generator
+if gan_image_size == [64,64]:
+    from tactile_gym_sim2real.pix2pix.gan_models.models_64 import GeneratorUNet
+if gan_image_size == [128,128]:
+    from tactile_gym_sim2real.pix2pix.gan_models.models_128 import GeneratorUNet
+if gan_image_size == [256,256]:
+    from tactile_gym_sim2real.pix2pix.gan_models.models_256 import GeneratorUNet
 
 # run the evaluation
-final_evaluation(SurfaceFollowDirEnv, rl_model_dir, gan_model_dir, n_eval_episodes, n_steps, show_plot)
+final_evaluation(
+    SurfaceFollowDirEnv,
+    rl_model_dir,
+    gan_model_dir,
+    GeneratorUNet,
+    n_eval_episodes,
+    n_steps,
+    show_plot
+)

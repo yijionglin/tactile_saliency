@@ -38,8 +38,8 @@ def make_target_df(poses_rng, moves_rng, num_poses, obj_poses, target_file, shuf
 def main(shuffle_data=False):
 
     # ====== data collection setup ========
-    mode = 'tap'
-    # mode = 'shear'
+    # mode = 'tap'
+    mode = 'shear'
     num_samples = 5000
 
     # set the work frame of the robot
@@ -50,7 +50,7 @@ def main(shuffle_data=False):
     sensor_offset_ang = -48 # align camera with axis
     tap_depth = -5.0
 
-    poses_rng = [[0, 0, 2.0, -15, -15, 0], [0, 0, 5.0, 15, 15, 0]]
+    poses_rng = [[0, 0, 2.5, -15, -15, 0], [0, 0, 5.5, 15, 15, 0]]
 
     if mode == 'shear':
         moves_rng = [[-5, -5, 0, -5, -5, -5], [5, 5, 0, 5, 5, 5]]

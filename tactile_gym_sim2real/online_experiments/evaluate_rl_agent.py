@@ -47,7 +47,8 @@ def final_evaluation(
         GanGenerator,
         n_eval_episodes,
         n_steps=100,
-        show_plot=True
+        show_plot=True,
+        save_data=False,
         ):
 
     rl_params  = load_json_obj(os.path.join(rl_model_dir, 'rl_params'))
@@ -77,12 +78,12 @@ def final_evaluation(
 
     def eval_model(model, env, n_eval_episodes=10, deterministic=True):
 
-        save_movement_data = False
-        if save_movement_data:
-            column_names = ['step', 'action', 'tcp_pose', 'tcp_vel', 'time']
+        if save_data:
+            # column_names = ['step', 'action', 'tcp_pose', 'tcp_vel', 'time']
+            column_names = ['step', 'action', 'tcp_pose', 'time']
             target_df = pd.DataFrame(columns=column_names)
             UR5 = env.envs[0]._UR5
-            rtde_client = UR5.robot.sync_robot.controller._client
+            # rtde_client = UR5.robot.sync_robot.controller._client
             csv_id = 0
 
         episode_rewards, episode_lengths = [], []
@@ -116,22 +117,23 @@ def final_evaluation(
                 print('Rew:        {}'.format(reward))
                 print('Done:       {}'.format(done))
 
-                if save_movement_data:
+                if save_data:
                     # get pose in workframe
                     robot_pose = UR5.current_TCP_pose
                     robot_pose[5] -= UR5.sensor_offset_ang
 
-                    # get vel in workframe
-                    current_vels = rtde_client.get_linear_speed()
-                    current_vels[3:] *= 180/np.pi # convert to deg
-                    transformed_vels = UR5.baseframe_to_workframe_vels(current_vels)
+                    # get vel in workframe (takes too long)
+                    # current_vels = rtde_client.get_linear_speed()
+                    # current_vels[3:] *= 180/np.pi # convert to deg
+                    # transformed_vels = UR5.baseframe_to_workframe_vels(current_vels)
 
                     print('TCP Pose:   {}'.format(robot_pose))
-                    print('TCP Speed:  {}'.format(transformed_vels))
+                    # print('TCP Speed:  {}'.format(transformed_vels))
                     print('Time:       {}'.format(time.time() - start_time))
 
                     # add to csv
-                    target_df.loc[csv_id] = [episode_length, action, robot_pose, transformed_vels, time.time() - start_time]
+                    # target_df.loc[csv_id] = [episode_length, action, robot_pose, transformed_vels, time.time() - start_time]
+                    target_df.loc[csv_id] = [episode_length, action, robot_pose, time.time() - start_time]
 
                     csv_id += 1
 
@@ -148,8 +150,8 @@ def final_evaluation(
             episode_rewards.append(episode_reward)
             episode_lengths.append(episode_length)
 
-        if save_movement_data:
-            csv_file = os.path.join('collected_data', 'evaluation_movement_data.csv')
+        if save_data:
+            csv_file = os.path.join('collected_data', 'eval_data.csv')
             target_df.to_csv(csv_file)
 
         return episode_rewards, episode_lengths

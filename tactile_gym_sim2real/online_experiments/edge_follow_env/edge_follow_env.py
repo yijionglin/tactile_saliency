@@ -149,6 +149,7 @@ class EdgeFollowEnv(gym.Env):
 
             # approx sim_vel / 1.6
             max_pos_vel = 5                # mm/s
+            # max_pos_vel = 10                # mm/s
             max_ang_vel = 0  * (np.pi/180) # rad/s
 
             self.x_act_min, self.x_act_max = -max_pos_vel, max_pos_vel

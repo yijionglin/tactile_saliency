@@ -77,7 +77,7 @@ class SurfaceFollowDirEnv(gym.Env):
 
         if self.task == 'ball':
             # set the workframe for the tool center point origin
-            self.work_frame = [107.5, -502.5, 207, -180, 0, 0]
+            self.work_frame = [109, -502.5, 205, -180, 0, 0]
 
             # set limits for the tool center point (rel to workframe)
             self.TCP_lims = np.zeros(shape=(6,2))
@@ -185,8 +185,8 @@ class SurfaceFollowDirEnv(gym.Env):
         elif self.control_mode == 'TCP_velocity_control':
 
             # approx sim_vel / 1.6
-            max_pos_vel = 5                  # mm/s
-            max_ang_vel = 2.5  * (np.pi/180) # rad/s
+            max_pos_vel = 2.5              # mm/s
+            max_ang_vel = 5  * (np.pi/180) # rad/s
 
             self.x_act_min, self.x_act_max = -max_pos_vel, max_pos_vel
             self.y_act_min, self.y_act_max = -max_pos_vel, max_pos_vel

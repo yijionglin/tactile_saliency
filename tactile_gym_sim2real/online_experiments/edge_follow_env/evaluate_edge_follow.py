@@ -5,8 +5,9 @@ from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_eval
 
 # evaluate params
 n_eval_episodes = 1
-n_steps = 100
+n_steps = 1000
 show_plot = True
+save_data = True
 
 # rl models
 rl_model_dir = os.path.join(
@@ -50,5 +51,6 @@ final_evaluation(
     GeneratorUNet,
     n_eval_episodes,
     n_steps,
-    show_plot
+    show_plot,
+    save_data
 )

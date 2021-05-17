@@ -50,14 +50,14 @@ if add_border:
     border_mask = torch.FloatTensor(np.load(os.path.join(saved_file_dir, "border_mask.npy")))
 
 # data collected for task
-task_dirs = ['edge_2d']
-# task_dirs = ['surface_3d']
+# task_dirs = ['edge_2d']
+task_dirs = ['surface_3d']
 # task_dirs = ['spherical_probe']
 # task_dirs = ['edge_2d', 'surface_3d']
 
 # for GAN data
-data_dirs = ['tap']
-# data_dirs = ['shear']
+# data_dirs = ['tap']
+data_dirs = ['shear']
 # data_dirs = ['tap', 'shear']
 
 # combine the data directories

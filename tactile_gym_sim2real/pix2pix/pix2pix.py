@@ -297,7 +297,7 @@ if __name__ == '__main__':
     parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
     parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
     parser.add_argument("--decay_epoch", type=int, default=100, help="epoch from which to start lr decay")
-    parser.add_argument("--n_cpu", type=int, default=12, help="number of cpu threads to use during batch generation")
+    parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
     parser.add_argument("--channels", type=int, default=1, help="number of image channels")
     parser.add_argument("--shuffle", type=str2bool, default=True, help="shuffle the generated image data")
     parser.add_argument("--sample_interval", type=int, default=5, help="interval between sampling of images from generators")
@@ -329,8 +329,8 @@ if __name__ == '__main__':
     # task_dirs = ['edge_2d', 'surface_3d']
 
     # for GAN data
-    data_dirs = ['tap']
-    # data_dirs = ['shear']
+    # data_dirs = ['tap']
+    data_dirs = ['shear']
     # data_dirs = ['tap', 'shear']
 
     # import the correct GAN models
@@ -343,5 +343,5 @@ if __name__ == '__main__':
     else:
         sys.exit('Incorrect dims specified')
 
-    for task_dirs in [['edge_2d'], ['surface_3d'], ['spherical_probe']]:
+    for task_dirs in [['edge_2d'], ['surface_3d']]:
         main(opt, augmentation_params, weights, task_dirs, data_dirs)

@@ -10,23 +10,37 @@ from scipy import interpolate
 
 from cri import transforms
 import pybullet as p
-import seaborn as sns
+# import seaborn as sns
 # sns.set(style="darkgrid")
 
 list_converter = lambda x: np.array(x.strip("[]").replace("'","").replace(","," ").split()).astype(np.float32)
 array_converter = lambda x: np.array(x.strip("[]").replace("'","").split()).astype(np.float32)
 
-data_dir = 'collected_data/square/'
-csv_filename = os.path.join(data_dir, '3d_surface_movement_data.csv')
+object = 'ball'
+
+gan_data = 'tap'
+# gan_data = 'shear'
+
+# vel = '2.5mmps_5degps_fullspeed'
+vel = '2.5mmps_5degps_halfspeed'
+
+data_dir = os.path.join(
+    'collected_data',
+    object,
+    gan_data,
+    vel
+)
+
+csv_filename = os.path.join(
+    data_dir,
+    'eval_data.csv'
+)
 
 df = pd.read_csv(csv_filename, converters={"action":   list_converter,
-                                           "tcp_pose": array_converter,
-                                           "tcp_vel":  array_converter})
-
+                                           "tcp_pose": array_converter})
 
 action_array   = np.stack(df['action'].to_numpy())
 tcp_pose_array = np.stack(df['tcp_pose'].to_numpy())
-tcp_vel_array  = np.stack(df['tcp_vel'].to_numpy())
 
 # pull step data
 steps = np.stack(df['step'].to_numpy())
@@ -50,7 +64,8 @@ def workframe_to_baseframe_vels(vels):
 trans_pose_array = []
 for pose in tcp_pose_array:
     trans_pose = workframe_to_baseframe_vels(pose)
-    trans_pose_array.append(trans_pose)
+    if trans_pose[2] < 0:
+        trans_pose_array.append(trans_pose)
 trans_pose_array = np.stack(trans_pose_array)
 
 
@@ -73,8 +88,6 @@ for pose in trans_pose_array:
 vector_array = np.stack(vector_array)
 extended_points_array = np.stack(extended_points_array)
 
-
-
 # pul pos data
 px  = trans_pose_array[:,0]
 py  = trans_pose_array[:,1]
@@ -83,17 +96,9 @@ pRx = vector_array[:,0]
 pRy = vector_array[:,1]
 pRz = vector_array[:,2]
 
-# pRx += 180
-# pRy += 180
-# pRz += 180
-
-# pRx *= np.pi /  180
-# pRy *= np.pi /  180
-# pRz *= np.pi /  180
-
 # fit a Surface to the data
 nx, ny = len(px),len(py)
-nx, ny = 128,128
+nx, ny = 64,64
 x = np.linspace(px.min(), px.max(), nx)
 y = np.linspace(px.min(), px.max(), ny)
 xv, yv = np.meshgrid(x, y, sparse=False, indexing='ij')
@@ -102,52 +107,51 @@ points = np.array((px, py)).T
 values = pz
 surf = interpolate.griddata(points, values, (xv, yv), method='linear')
 # surf[np.isnan(surf)] = 0
-# np.save(os.path.join(data_dir,'real_hieghtfield_data.npy'), surf*0.001)
 
 # plot figure
 fig = plt.figure()
 ax = plt.axes(projection='3d')
 
-ax.plot_surface(xv, yv, surf, cmap=cm.coolwarm, vmin=np.nanmin(surf), vmax=np.nanmax(surf), alpha=0.5)
-# ax.plot_trisurf(xv.ravel(), yv.ravel(), surf.ravel(), cmap=cm.coolwarm, vmin=np.nanmin(surf), vmax=np.nanmax(surf))
+# ax.plot_surface(xv, yv, surf, cmap=cm.coolwarm, vmin=np.nanmin(surf), vmax=np.nanmax(surf), alpha=0.5)
+ax.plot_trisurf(xv.ravel(), yv.ravel(), surf.ravel(), cmap=cm.coolwarm, vmin=np.nanmin(surf), vmax=np.nanmax(surf))
 
-scat_step_size = 2
-quiv_step_size = 2
+scat_step_size = 1
+quiv_step_size = 1
 ax.scatter(px[::scat_step_size], py[::scat_step_size], pz[::scat_step_size], color='b', marker='.', alpha=0.2)
 
 #  plot normals
-# ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],  pz[::quiv_step_size],
-#           pRx[::quiv_step_size], pRy[::quiv_step_size], pRz[::quiv_step_size],
-#           color='r', length=1.0, normalize=False, alpha=0.25, arrow_length_ratio=0.0)
+ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],  pz[::quiv_step_size],
+          pRx[::quiv_step_size], pRy[::quiv_step_size], pRz[::quiv_step_size],
+          color='r', length=0.25, normalize=False, alpha=0.25, arrow_length_ratio=0.0)
 
 # setup plot
 
 # remove ticks
-ax.set_xticks([])
-ax.set_yticks([])
-ax.set_zticks([])
+# ax.set_xticks([])
+# ax.set_yticks([])
+# ax.set_zticks([])
 
 # make the panes transparent
-ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
-ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+# ax.xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+# ax.yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+# ax.zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
 
 # make the grid lines transparent
-ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
-ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+# ax.xaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+# ax.yaxis._axinfo["grid"]['color'] =  (1,1,1,0)
+# ax.zaxis._axinfo["grid"]['color'] =  (1,1,1,0)
 
 # make the spines transparent
-ax.w_xaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
-ax.w_yaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
-ax.w_zaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+# ax.w_xaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+# ax.w_yaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+# ax.w_zaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
 
 # set view for surf
 ax.view_init(azim=-70, elev=62)
 ax.dist = 7
 
-fig.savefig(os.path.join(data_dir, 'surf_view.png'), dpi=320, pad_inches=0.01, bbox_inches='tight')
-plt.show()
+# fig.savefig(os.path.join(data_dir, 'surf_view.png'), dpi=320, pad_inches=0.01, bbox_inches='tight')
+# plt.show()
 
 #  plot normals
 # ax.clear()
@@ -157,11 +161,27 @@ ax.set_zticks([])
 
 ax.quiver(px[::quiv_step_size],  py[::quiv_step_size],  pz[::quiv_step_size],
           pRx[::quiv_step_size], pRy[::quiv_step_size], pRz[::quiv_step_size],
-          color='r', length=4.0, normalize=False, alpha=0.5, arrow_length_ratio=0.0)
+          color='r', length=0.5, normalize=False, alpha=0.5, arrow_length_ratio=0.0)
 
 # set view for normals
 ax.view_init(azim=-90, elev=90)
 ax.dist = 6.5
 
-fig.savefig(os.path.join(data_dir, 'norm_view.png'), dpi=320, pad_inches=0.01, bbox_inches='tight', transparent=True)
+# fig.savefig(os.path.join(data_dir, 'norm_view.png'), dpi=320, pad_inches=0.01, bbox_inches='tight', transparent=True)
+# plt.show()
+
+
+# ground truth shape
+def get_mesh_file(obj_shape='sphere', scale=1000, origin=[0,0,0]):
+    csv_file = os.path.join('/home/alex/Documents/tactile_gym/quantitative_experiments/data/surface_follow/ground_truth_shapes', '{}_mesh.csv'.format(obj_shape))
+    df = pd.read_csv(csv_file).astype(float)
+    coords = df.to_numpy() * scale
+    coords = np.add(coords,origin)
+    return coords
+
+def plot_shape(obj_shape='sphere', scale=1000, origin=[0,0,0]):
+    perim = get_mesh_file(obj_shape, scale, origin)
+    plt.plot(perim[:, 0], perim[:, 1], perim[:, 2], '.', markersize=2)
+
+plot_shape('sphere')
 plt.show()

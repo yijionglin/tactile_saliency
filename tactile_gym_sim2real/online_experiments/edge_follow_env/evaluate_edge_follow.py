@@ -15,14 +15,14 @@ rl_model_dir = os.path.join(
     "../trained_rl_networks",
     'edge_follow-v0',
     'rad_ppo',
-    'tactile'
+    'tactile_corner'
 )
 
 # select which gan
 dataset = 'edge_2d'
 
-data_type = 'tap'
-# data_type = 'shear'
+# data_type = 'tap'
+data_type = 'shear'
 
 # gan_image_size = [64, 64]
 gan_image_size = [128, 128]

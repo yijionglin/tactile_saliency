@@ -37,6 +37,11 @@ class ObjectRollEnv(gym.Env):
         if self.record_video:
             self.video_frames = []
 
+        self.save_traj = True
+        if self.save_traj:
+            self.pixel_traj = []
+            self.goal_traj = []
+
         # define the movement mode used in the saved model
         self.movement_mode = env_modes['movement_mode']
         self.control_mode  = env_modes['control_mode']
@@ -46,16 +51,17 @@ class ObjectRollEnv(gym.Env):
         self.task = 'from_pad'
         self.randomise_goal = True
         self.reset_to_origin = False
+        self.reset_counter = -1
 
         # set the workframe for the tool center point origin
         if self.task == 'from_hand':
             self.work_frame = [0.0, -450.0, 200, -180, 0, 0]
         elif self.task == 'from_pad':
             # be careful as close to base
-            self.work_frame = [0.0, -450.0, 19, -180, 0, 0] # 8mm
-            # self.work_frame = [0.0, -450.0, 17, -180, 0, 0] # 6mm
-            # self.work_frame = [0.0, -450.0, 16, -180, 0, 0] # 4mm
-            # self.work_frame = [0.0, -450.0, 15, -180, 0, 0] # 2mm
+            self.work_frame = [0.0, -450.0, 19.5, -180, 0, 0] # 8mm
+            # self.work_frame = [0.0, -450.0, 18.5, -180, 0, 0] # 6mm
+            # self.work_frame = [0.0, -450.0, 17.0, -180, 0, 0] # 4mm
+            # self.work_frame = [0.0, -450.0, 15.0, -180, 0, 0] # 2mm
 
         # set limits for the tool center point (rel to workframe)
         self.TCP_lims = np.zeros(shape=(6,2))
@@ -100,6 +106,8 @@ class ObjectRollEnv(gym.Env):
                                action_lims=[self.min_action, self.max_action],
                                tactip_type=self.tactip_type)
 
+        # Set up the detector with default parameters.
+        self.setup_blob_detection()
 
         # this is needed to set some variables used for initial observation/obs_dim()
         self.reset()
@@ -119,7 +127,15 @@ class ObjectRollEnv(gym.Env):
         # save recorded video
         if self.record_video:
             video_file = os.path.join('collected_data', 'tactile_video.mp4')
-            imageio.mimwrite(video_file, np.stack(self.video_frames), fps=8)
+            bgr_frames = np.stack(self.video_frames)
+            rgb_frames = bgr_frames[:,:,:,[2, 1, 0]]
+            imageio.mimwrite(video_file, rgb_frames, fps=10)
+
+        if self.save_traj:
+            pixel_traj_file = os.path.join('collected_data', 'pixel_traj.csv')
+            goal_traj_file = os.path.join('collected_data', 'goal_traj.csv')
+            np.savetxt(pixel_traj_file, self.pixel_traj, delimiter=",")
+            np.savetxt(goal_traj_file, self.goal_traj, delimiter=",")
 
         # raise arm to avoid moving directly to workframe pos potentially hitting objects
         self._UR5.raise_tip(dist=10)
@@ -151,6 +167,7 @@ class ObjectRollEnv(gym.Env):
         elif self.control_mode == 'TCP_velocity_control':
 
             # approx sim_vel / 1.6
+            # max_pos_vel = 2.5                # mm/s
             max_pos_vel = 5                # mm/s
             max_ang_vel = 0  * (np.pi/180) # rad/s
 
@@ -186,37 +203,77 @@ class ObjectRollEnv(gym.Env):
     def setup_goal(self):
         # for now just place in center
         self.goal_pos_tcp = np.array([0.0,0.0,0.0])
+        self.pixel_distance_thresh = 5
+        goal_far_enough = False
 
-        if self.randomise_goal:
-            # overwrite x, y with spherical random pose generation within
-            # 12.5mm disk
-            ang = np.random.uniform(0, 2*np.pi)
-            rad = np.random.uniform(0, 1)
+        # repeatedly generate random goal until one is far enough
+        while not goal_far_enough:
+            if self.randomise_goal:
+                # overwrite x, y with spherical random pose generation within
+                # 12.5mm disk
+                ang = np.random.uniform(0, 2*np.pi)
+                rad = np.random.uniform(0, 1)
 
-            # set the limit of the radius
-            rad_lim = 0.01
+                # set the limit of the radius
+                rad_lim = 0.01
 
-            # use sqrt r to get uniform disk spread
-            x = np.sqrt(rad)*np.cos(ang) * rad_lim
-            y = np.sqrt(rad)*np.sin(ang) * rad_lim
-            self.goal_pos_tcp[0], self.goal_pos_tcp[1] = x, y
+                # use sqrt r to get uniform disk spread
+                x = np.sqrt(rad)*np.cos(ang) * rad_lim
+                y = np.sqrt(rad)*np.sin(ang) * rad_lim
+                self.goal_pos_tcp[0], self.goal_pos_tcp[1] = x, y
+
+            # get the coords of the goal in image space
+            # min/max from 20mm radius tip + extra for border
+            min, max = -0.021, 0.021
+            norm_tcp_pos_x = (self.goal_pos_tcp[0] - min) / (max - min)
+            norm_tcp_pos_y = (self.goal_pos_tcp[1] - min) / (max - min)
+
+            self.goal_pixel_coords = (
+                int(norm_tcp_pos_x*self.rl_image_size[0]),
+                int(norm_tcp_pos_y*self.rl_image_size[1])
+            )
+
+            # break when goal > 2 * distance thresh away
+            if self.latest_obj_pixel_coords is not None:
+                goal_far_enough = not self.check_pixel_dist(2*self.pixel_distance_thresh)
+            else:
+                goal_far_enough = True
+
+
+    def setup_blob_detection(self):
+        params = cv2.SimpleBlobDetector_Params()
+        params.minThreshold = 0
+        params.maxThreshold = 255
+        params.filterByArea = True
+        params.minArea = 20
+        params.filterByCircularity = False
+        params.filterByConvexity = False
+        params.filterByInertia = False
+        self.blob_detector = cv2.SimpleBlobDetector_create(params)
+
+        self.latest_obj_pixel_coords = None
+
 
     def reset(self):
 
         self._env_step_counter = 0
+        self.reset_counter += 1
 
-        # raise arm to avoid moving directly to workframe pos potentially hitting objects
-        if not self.first_run and self.reset_to_origin:
-            self._UR5.raise_tip(dist=50)
+        # avoid double reset
+        if self.reset_counter % 2 == 0:
 
-        # reset the ur5 arm
-        if self.first_run:
-            self._UR5.reset(reset_to_origin=True)
-        else:
-            self._UR5.reset(reset_to_origin=self.reset_to_origin)
+            # raise arm to avoid moving directly to workframe pos potentially hitting objects
+            if not self.first_run and self.reset_to_origin:
+                self._UR5.raise_tip(dist=50)
 
-        # reset the goal
-        self.setup_goal()
+            # reset the ur5 arm
+            if self.first_run:
+                self._UR5.reset(reset_to_origin=True)
+            else:
+                self._UR5.reset(reset_to_origin=self.reset_to_origin)
+
+            # reset the goal
+            self.setup_goal()
 
         # get the starting observation
         self._observation = self.get_observation()
@@ -287,10 +344,22 @@ class ObjectRollEnv(gym.Env):
 
         return self._observation, reward, done, {}
 
+    def check_pixel_dist(self, dist_thresh=5):
+        pixel_distance = np.linalg.norm(
+            np.array(self.latest_obj_pixel_coords) - np.array(self.goal_pixel_coords)
+        )
+        return pixel_distance < dist_thresh
+
     def termination(self):
         # terminate when max ep len reached
         if self._env_step_counter >= self._max_steps:
             return True
+
+        # terminate when pixel distance below thresh
+        if self.latest_obj_pixel_coords is not None:
+            if self.check_pixel_dist(self.pixel_distance_thresh):
+                return True
+
         return False
 
     def reward(self):
@@ -301,23 +370,14 @@ class ObjectRollEnv(gym.Env):
         Overlay a circle onto the observation in roughly the position of the goal
         """
 
-        # tactile_image = cv2.cvtColor(tactile_image, cv2.COLOR_GRAY2BGR)
-
-        # get the coords of the goal in image space
-        # min/max from 20mm radius tip + extra for border
-        min, max = -0.021, 0.021
-        norm_tcp_pos_x = (self.goal_pos_tcp[0] - min) / (max - min)
-        norm_tcp_pos_y = (self.goal_pos_tcp[1] - min) / (max - min)
-
-        goal_coordinates = (int(norm_tcp_pos_x*self.rl_image_size[0]),
-                            int(norm_tcp_pos_y*self.rl_image_size[1]))
+        tactile_image = cv2.cvtColor(tactile_image, cv2.COLOR_GRAY2BGR)
 
         # Draw a circle at the goal
         circle_rad = int(self.rl_image_size[0] / 32)
         # overlay_img = cv2.circle(tactile_image, goal_coordinates, radius=circle_rad, color=(255,255,255), thickness=-1)
         overlay_img = cv2.drawMarker(tactile_image,
-                                     goal_coordinates,
-                                     (255, 255, 255),
+                                     self.goal_pixel_coords,
+                                     (0, 0, 255),
                                      markerType=cv2.MARKER_CROSS,
                                      markerSize=10,
                                      thickness=1,
@@ -327,12 +387,28 @@ class ObjectRollEnv(gym.Env):
 
         return overlay_img
 
+    def track_blob(self, image):
+        # detect the object as blob
+        inverted_img = cv2.bitwise_not(image[..., np.newaxis])
+        self.keypoints = self.blob_detector.detect(inverted_img)
+
+        if self.keypoints != []:
+            self.latest_obj_pixel_coords = self.keypoints[0].pt
+
+            if self.save_traj:
+                self.pixel_traj.append(self.latest_obj_pixel_coords)
+                self.goal_traj.append(self.goal_pixel_coords)
+
+
     def get_tactile_obs(self):
         # get image from sensor
         observation = self._UR5.get_observation()
 
         # process with gan here
         generated_sim_image, processed_real_image = self.GAN.gen_sim_image(observation)
+
+        # track the pose of the object
+        self.track_blob(generated_sim_image)
 
         # add border to image
         generated_sim_image[self.border_mask==1] = self.border_gray[self.border_mask==1]
@@ -346,13 +422,27 @@ class ObjectRollEnv(gym.Env):
             # get image with target in approximate position
             overlay_sim_image = self.overlay_goal_on_image(generated_sim_image)
 
+            # draw detected blob on image
+            overlay_sim_image = cv2.drawKeypoints(
+                overlay_sim_image,
+                self.keypoints,
+                None,
+                color=(0,255,0),
+                flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+            )
+
             # resize to 256, 256 for video
             resized_real_image = cv2.resize(processed_real_image,
                                            (256,256),
                                            interpolation=cv2.INTER_NEAREST)
+
             resized_sim_image = cv2.resize(overlay_sim_image,
                                            (256,256),
                                            interpolation=cv2.INTER_NEAREST)
+
+            # convert bgr to match drawn on gen image
+            resized_real_image = cv2.cvtColor(resized_real_image, cv2.COLOR_GRAY2BGR)
+
             frame = np.hstack([resized_real_image, resized_sim_image])
             cv2.imshow('real_vs_generated', frame)
             if cv2.waitKey(1) & 0xFF == 27:

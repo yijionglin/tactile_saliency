@@ -4,8 +4,8 @@ from tactile_gym_sim2real.online_experiments.object_roll_env.object_roll_env imp
 from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_evaluation
 
 # evaluate params
-n_eval_episodes = 5
-n_steps = 100
+n_eval_episodes = 25
+n_steps = 200
 show_plot = True
 save_data = True
 

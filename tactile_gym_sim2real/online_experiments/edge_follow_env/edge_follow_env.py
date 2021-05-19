@@ -46,7 +46,7 @@ class EdgeFollowEnv(gym.Env):
 
         # set the workframe for the tool center point origin
         self.work_frame = [0.0, -450.0, 49.5, -180, 0, 0]   # square/circle/clover near edge
-        # self.work_frame = [0.0, -465.0, 50, -180, 0, 0]   # foil near edge (pointing left)
+        # self.work_frame = [0.0, -465.0, 50.5, -180, 0, 0]   # foil near edge (pointing left)
 
         # square
         # self.work_frame = [0.0, -450.0, 149.5, -180, 0, 0]   # near edge

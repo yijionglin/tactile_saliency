@@ -5,24 +5,22 @@ import matplotlib.pyplot as plt
 import json
 import os
 import cv2
+import itertools
 from skimage.metrics import structural_similarity
 
 from tactile_gym_sim2real.image_transforms import load_video_frames
 
-import seaborn as sns
-sns.set(style="darkgrid")
 
 # load data
-# data_dirs = ['2mm_5hz', '4mm_5hz', '6mm_5hz', '8mm_5hz', '8mm_8hz']
-data_dirs = ['2mm', '4mm', '6mm', '8mm']
+size_dirs = ['4mm', '6mm', '8mm']
+vel_dirs = ['2.5mmps']
 
-for data_dir in data_dirs:
+for [size_dir, vel_dir] in list(itertools.product(size_dirs, vel_dirs)):
 
-    full_data_dir = os.path.join('collected_data', 'data', data_dir)
+    full_data_dir = os.path.join('collected_data', size_dir, vel_dir)
     video_frames = load_video_frames(os.path.join(full_data_dir, 'tactile_video.mp4'))
     overlay_increment = 2
     offset = 10
-    # steps_per_goal = 50
     steps_per_goal = 100
     n_goals = 5
 

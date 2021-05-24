@@ -35,7 +35,7 @@ class SurfaceFollowDirEnv(gym.Env):
         # for incrementing direction each episode
         self.reset_counter = -1
 
-        self.record_video = True
+        self.record_video = False
         if self.record_video:
             self.video_frames = []
 
@@ -44,9 +44,9 @@ class SurfaceFollowDirEnv(gym.Env):
         self.control_mode  = env_modes['control_mode']
 
         # set which task we're testing for setting workframe/limits
-        self.task = 'taichi'
+        # self.task = 'taichi'
         # self.task = 'perspex'
-        # self.task = 'ball'
+        self.task = 'ball'
         # self.task = '3d_surface'
 
         if self.task == 'taichi':
@@ -167,7 +167,7 @@ class SurfaceFollowDirEnv(gym.Env):
     def setup_action_space(self):
         # these are used for bounds on the action space in SAC and clipping
         # range for PPO
-        self.min_action, self.max_action  = -0.01,  0.01
+        self.min_action, self.max_action  = -0.25,  0.25
 
         # define action ranges per act dim to rescale output of policy
         if self.control_mode == 'TCP_position_control':

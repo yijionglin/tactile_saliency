@@ -5,8 +5,8 @@ from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_eval
 
 # evaluate params
 n_eval_episodes = 8
-n_steps = 125
-show_plot = True
+n_steps = 200
+show_plot = False
 save_data = True
 
 # rl models
@@ -21,8 +21,8 @@ rl_model_dir = os.path.join(
 # select which gan
 dataset = 'surface_3d'
 
-data_type = 'tap'
-# data_type = 'shear'
+# data_type = 'tap'
+data_type = 'shear'
 
 # gan_image_size = [64, 64]
 gan_image_size = [128, 128]

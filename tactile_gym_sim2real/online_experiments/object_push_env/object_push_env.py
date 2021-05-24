@@ -15,23 +15,22 @@ import pybullet as pb
 from tactile_gym_sim2real.online_experiments.ur5_tactip import UR5_TacTip
 from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
 
-from tactile_gym.rl_envs.ur5_envs.tactip_reference_images import *
+from tactile_gym.assets import get_assets_path, add_assets_path
 
 class ObjectPushEnv(gym.Env):
 
     def __init__(self,
                  env_modes,
                  gan_model_dir,
+                 GanGenerator,
                  max_steps=1000,
-                 image_size=[64,64],
-                 add_border=False,
+                 rl_image_size=[64,64],
                  show_plot=True):
 
         self._observation = []
         self._env_step_counter = 0
         self._max_steps = max_steps
-        self.image_size = image_size
-        self.add_border = add_border
+        self.rl_image_size = rl_image_size
         self.show_plot = show_plot
         self.first_run = True
         self.tactip_type = 'right_angle'
@@ -48,7 +47,9 @@ class ObjectPushEnv(gym.Env):
         self.control_mode  = env_modes['control_mode']
 
         # what traj to generate
-        self.traj_type = 'straight'
+        # self.traj_type = 'straight'
+        # self.traj_type = 'curve'
+        self.traj_type = 'sin'
 
         # set the workframe for the tool center point origin
         # self.work_frame = [0.0, -420.0, 200, -180, 0, 0] # safe
@@ -70,29 +71,28 @@ class ObjectPushEnv(gym.Env):
         self.setup_action_space()
 
         # load the trained pix2pix GAN network
-        self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, rl_image_size=self.image_size)
+        self.GAN = pix2pix_GAN(
+            gan_model_dir=gan_model_dir,
+            Generator=GanGenerator,
+            rl_image_size=self.rl_image_size
+        )
 
         # load saved border image files
         ref_images_path = add_assets_path(
             os.path.join('robot_assets', 'tactip', 'tactip_reference_images', 'right_angle')
         )
 
-        border_gray_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_gray.npy')
-        border_mask_savefile = os.path.join( ref_images_path, str(self.image_size[0]) + 'x' + str(self.image_size[0]), 'border_mask.npy')
+        border_gray_savefile = os.path.join( ref_images_path, str(self.rl_image_size[0]) + 'x' + str(self.rl_image_size[0]), 'nodef_gray.npy')
+        border_mask_savefile = os.path.join( ref_images_path, str(self.rl_image_size[0]) + 'x' + str(self.rl_image_size[0]), 'border_mask.npy')
         self.border_gray = np.load(border_gray_savefile)
         self.border_mask = np.load(border_mask_savefile)
 
-        # set up plot for generated image
+        # setup plot for rendering
         if self.show_plot:
-            plt.ion()
-            plot_data = np.random.rand(self.image_size[0], self.image_size[1])
-            self._fig, self._ax = plt.subplots(1,2, figsize=(10,5))
-            self._real_image_window = self._ax[0].imshow(plot_data, interpolation='none', animated=True, label="tactip_view", vmin=0, vmax=255, cmap='gray')
-            self._gen_image_window  = self._ax[1].imshow(plot_data, interpolation='none', animated=True, label="tactip_view", vmin=0, vmax=255, cmap='gray')
-            self._ax[0].set_title('Processed Real Image')
-            self._ax[1].set_title('Generated Sim Image')
-            plt.tight_layout()
-            plt.pause(0.001)
+            cv2.namedWindow('real_vs_generated')
+            self._render_closed = False
+        else:
+            self._render_closed = True
 
         # setup the UR5
         self._UR5 = UR5_TacTip(control_mode=self.control_mode,
@@ -121,7 +121,7 @@ class ObjectPushEnv(gym.Env):
         # save recorded video
         if self.record_video:
             video_file = os.path.join('collected_data', 'tactile_video.mp4')
-            imageio.mimwrite(video_file, np.stack(self.video_frames), fps=7)
+            imageio.mimwrite(video_file, np.stack(self.video_frames), fps=10)
 
         self._UR5.close()
 
@@ -171,11 +171,17 @@ class ObjectPushEnv(gym.Env):
     def setup_observation_space(self):
 
         # image dimensions for sensor
-        self.obs_dim = self.get_obs_dim()
-        self.observation_space = gym.spaces.Box(low=-np.inf,
-                                                high=np.inf,
-                                                shape=self.obs_dim,
-                                                dtype=np.float32)
+        self.tactile_obs_dim = self.get_tactile_obs().shape
+        self.feature_obs_dim = self.get_feature_obs().shape
+
+        self.observation_space = gym.spaces.Dict({
+            'tactile': gym.spaces.Box(
+                low=0, high=255, shape=self.tactile_obs_dim, dtype=np.uint8
+            ),
+            'extended_feature': gym.spaces.Box(
+                low=-np.inf, high=np.inf, shape=self.feature_obs_dim, dtype=np.float32
+            )
+        })
 
     def setup_traj(self):
         self.traj_n_points = 20
@@ -210,7 +216,7 @@ class ObjectPushEnv(gym.Env):
 
         # randomly pick traj direction
         # traj_ang = np.random.uniform(-np.pi/8, np.pi/8)
-        traj_angs = [-np.pi/8, np.pi/8, 0.0]
+        traj_angs = [-np.pi/8, 0.0, np.pi/8]
         # traj_angs = [0.0, 0.0, 0.0, 0.0]
         traj_idx = int(self.reset_counter / 2)
         init_offset = 0.04 + self.traj_spacing
@@ -303,7 +309,7 @@ class ObjectPushEnv(gym.Env):
         self.setup_traj()
 
         # get the starting observation
-        self._observation = self.get_extended_observation()
+        self._observation = self.get_observation()
 
         # use to avoid doing things on first call to reset
         self.first_run = False
@@ -340,7 +346,6 @@ class ObjectPushEnv(gym.Env):
 
             # translate the direction
             perp_scale = actions[0]
-            print(perp_scale)
             perp_action = np.dot(workframe_perp_tip_direction, perp_scale)
 
             # auto move in the dir tip is pointing
@@ -439,7 +444,7 @@ class ObjectPushEnv(gym.Env):
         # pull info after step
         done = self.termination()
         reward = self.reward()
-        self._observation = np.array(self.get_extended_observation())
+        self._observation = self.get_observation()
 
         if self._env_step_counter % self.goal_update_rate == 0:
             self.update_goal()
@@ -455,8 +460,7 @@ class ObjectPushEnv(gym.Env):
     def reward(self):
         return 0
 
-
-    def get_extended_observation(self):
+    def get_tactile_obs(self):
         # get image from sensor
         observation = self._UR5.get_observation()
 
@@ -464,34 +468,35 @@ class ObjectPushEnv(gym.Env):
         generated_sim_image, processed_real_image = self.GAN.gen_sim_image(observation)
 
         # add border to image
-        if self.add_border:
-            generated_sim_image[self.border_mask==1] = self.border_gray[self.border_mask==1]
+        generated_sim_image[self.border_mask==1] = self.border_gray[self.border_mask==1]
 
         # add a channel axis at end
         generated_sim_image = generated_sim_image[..., np.newaxis]
 
         # plot data
-        if self.show_plot:
-
-            self._real_image_window.set_data(processed_real_image)
-            self._gen_image_window.set_data(generated_sim_image)
-            self._ax[0].plot([0])
-            self._ax[1].plot([0])
-            plt.pause(0.001)
-
-        if self.record_video:
+        if not self._render_closed:
             # resize to 256, 256 for video
-            resized_sim_image = cv2.resize(generated_sim_image,
-                                           (256,256),
-                                           interpolation=cv2.INTER_NEAREST)
             resized_real_image = cv2.resize(processed_real_image,
                                            (256,256),
                                            interpolation=cv2.INTER_NEAREST)
-
+            resized_sim_image = cv2.resize(generated_sim_image,
+                                           (256,256),
+                                           interpolation=cv2.INTER_NEAREST)
             frame = np.hstack([resized_real_image, resized_sim_image])
-            self.video_frames.append(frame)
+            cv2.imshow('real_vs_generated', frame)
+            if cv2.waitKey(1) & 0xFF == 27:
+                cv2.destroyWindow('real_vs_generated')
+                self._render_closed = True
 
-        ## ============ Extend observation with features ================
+            if self.record_video:
+                self.video_frames.append(frame)
+
+        return generated_sim_image
+
+    def get_feature_obs(self):
+        """
+        Get feature to extend current observations.
+        """
         # get pose in workframe
         robot_pose = self._UR5.current_TCP_pose
         robot_pose[5] -= self.sensor_offset_ang
@@ -504,19 +509,17 @@ class ObjectPushEnv(gym.Env):
                                   *self.goal_pos_workframe, *self.goal_rpy_workframe
                                   ])
 
-        # print('')
-        # print(tcp_pos_workframe)
-        # print(tcp_rpy_workframe)
-        # print(self.goal_pos_workframe)
-        # print(self.goal_rpy_workframe)
+        return feature_array
 
-        num_features = len(feature_array)
-        padded_feature_array = np.zeros(self.image_size)
-        padded_feature_array[0, :num_features] = feature_array
-
-        extended_observation = np.dstack([generated_sim_image/255.0, padded_feature_array])
-
-        return extended_observation
+    def get_observation(self):
+        """
+        Returns the observation
+        """
+        # init obs dict
+        observation = {}
+        observation['tactile'] = self.get_tactile_obs()
+        observation['extended_feature'] = self.get_feature_obs()
+        return observation
 
     def get_act_dim(self):
         if self.movement_mode == 'y':
@@ -531,6 +534,3 @@ class ObjectPushEnv(gym.Env):
             return 3
         else:
             sys.exit('Incorrect movement mode specified: {}'.format(self.movement_mode))
-
-    def get_obs_dim(self):
-        return self.get_extended_observation().shape

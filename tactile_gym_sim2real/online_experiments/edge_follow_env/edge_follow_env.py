@@ -69,7 +69,11 @@ class EdgeFollowEnv(gym.Env):
         self.setup_action_space()
 
         # load the trained pix2pix GAN network
-        self.GAN = pix2pix_GAN(gan_model_dir=gan_model_dir, Generator=GanGenerator, rl_image_size=self.rl_image_size)
+        self.GAN = pix2pix_GAN(
+            gan_model_dir=gan_model_dir,
+            Generator=GanGenerator,
+            rl_image_size=self.rl_image_size
+        )
 
         # load saved border image files
         ref_images_path = add_assets_path(
@@ -116,7 +120,7 @@ class EdgeFollowEnv(gym.Env):
         # save recorded video
         if self.record_video:
             video_file = os.path.join('collected_data', 'tactile_video.mp4')
-            imageio.mimwrite(video_file, np.stack(self.video_frames), fps=8)
+            imageio.mimwrite(video_file, np.stack(self.video_frames), fps=10)
 
         # raise arm to avoid moving directly to workframe pos potentially hitting objects
         self._UR5.raise_tip(dist=10)

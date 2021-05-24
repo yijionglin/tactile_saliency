@@ -23,6 +23,8 @@ record_video = False
 if record_video:
     video_frames = []
 
+# useful for rolling task
+track_indent = True
 
 # image_size = [64,64]
 image_size = [128,128]
@@ -30,8 +32,8 @@ image_size = [128,128]
 
 # set which gan
 # dataset = 'edge_2d'
-# dataset = 'surface_3d'
-dataset = 'spherical_probe'
+dataset = 'surface_3d'
+# dataset = 'spherical_probe'
 
 data_type = 'tap'
 # data_type = 'shear'
@@ -59,17 +61,17 @@ if image_size == [128,128]:
 if image_size == [256,256]:
     from tactile_gym_sim2real.pix2pix.gan_models.models_256 import GeneratorUNet
 
-# setup
 # Setup SimpleBlobDetector parameters.
-params = cv2.SimpleBlobDetector_Params()
-params.minThreshold = 0
-params.maxThreshold = 255
-params.filterByArea = True
-params.minArea = 20
-params.filterByCircularity = False
-params.filterByConvexity = False
-params.filterByInertia = False
-detector = cv2.SimpleBlobDetector_create(params)
+if track_indent:
+    params = cv2.SimpleBlobDetector_Params()
+    params.minThreshold = 0
+    params.maxThreshold = 255
+    params.filterByArea = True
+    params.minArea = 20
+    params.filterByCircularity = False
+    params.filterByConvexity = False
+    params.filterByInertia = False
+    detector = cv2.SimpleBlobDetector_create(params)
 
 # load saved border image files
 add_border = True
@@ -99,8 +101,9 @@ while True:
     generated_sim_image, processed_real_image = GAN.gen_sim_image(raw_real_image)
 
     # detect the object as blob
-    inverted_img = cv2.bitwise_not(generated_sim_image[..., np.newaxis])
-    keypoints = detector.detect(inverted_img)
+    if track_indent:
+        inverted_img = cv2.bitwise_not(generated_sim_image[..., np.newaxis])
+        keypoints = detector.detect(inverted_img)
 
     # add a border to the generated image
     if add_border:
@@ -109,17 +112,18 @@ while True:
     # add axis to generated sim image
     generated_sim_image = generated_sim_image[...,np.newaxis]
 
-    # draw blob markers
-    if keypoints != []:
-        print(keypoints[0].pt)
+    if track_indent:
+        # draw blob markers
+        if keypoints != []:
+            print(keypoints[0].pt)
 
-    generated_sim_image = cv2.drawKeypoints(
-        generated_sim_image,
-        keypoints,
-        None,
-        color=(0,255,0),
-        flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
-    )
+        generated_sim_image = cv2.drawKeypoints(
+            generated_sim_image,
+            keypoints,
+            None,
+            color=(0,255,0),
+            flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+        )
 
     # convert the generated image to float format to match processed real image
     # (which is usually normalised before inputting into network)
@@ -127,10 +131,14 @@ while True:
     generated_sim_image  = (generated_sim_image/255).astype(np.float32) # convert to image format
 
     # convert real image to color to match drawn on generated image
-    processed_real_image = cv2.cvtColor(processed_real_image, cv2.COLOR_GRAY2BGR)
+    if track_indent:
+        processed_real_image = cv2.cvtColor(processed_real_image, cv2.COLOR_GRAY2BGR)
 
     # create an overlay of the two images
-    overlay_image = cv2.addWeighted(processed_real_image, 0.25, generated_sim_image, 0.9, 0)#[...,np.newaxis]
+    overlay_image = cv2.addWeighted(processed_real_image, 0.25, generated_sim_image, 0.9, 0)
+
+    if not track_indent:
+        overlay_image = overlay_image[...,np.newaxis]
 
     # concat all images to display at once
     disp_image = np.concatenate([processed_real_image, generated_sim_image, overlay_image], axis=1)

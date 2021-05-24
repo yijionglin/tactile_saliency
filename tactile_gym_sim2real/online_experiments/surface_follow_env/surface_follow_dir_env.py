@@ -167,7 +167,7 @@ class SurfaceFollowDirEnv(gym.Env):
     def setup_action_space(self):
         # these are used for bounds on the action space in SAC and clipping
         # range for PPO
-        self.min_action, self.max_action  = -0.01,  0.01
+        self.min_action, self.max_action  = -0.25,  0.25
 
         # define action ranges per act dim to rescale output of policy
         if self.control_mode == 'TCP_position_control':

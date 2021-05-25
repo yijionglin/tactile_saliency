@@ -17,6 +17,14 @@ from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
 
 from tactile_gym.assets import get_assets_path, add_assets_path
 
+# from robopush.camera import RSCamera, ColorFrameError, DepthFrameError, DistanceError
+# from robopush.detector import ArUcoDetector
+# from robopush.tracker import ArUcoTracker, display_fn, NoMarkersDetected, MultipleMarkersDetected
+
+
+# def make_realsense():
+#     return RSCamera(color_size=(640, 480), color_fps=30, depth_size=(640, 480), depth_fps=30)
+
 class ObjectPushEnv(gym.Env):
 
     def __init__(self,
@@ -38,8 +46,12 @@ class ObjectPushEnv(gym.Env):
         # for incrementing workframe each episode
         self.reset_counter = -1
 
-        self.record_video = True
-        if self.record_video:
+        # flags for saving data
+        self.record_video_flag = False
+        self.save_traj_flag = False
+        self.save_rs_data_flag = True
+
+        if self.record_video_flag:
             self.video_frames = []
 
         # define the movement mode used in the saved model
@@ -47,9 +59,9 @@ class ObjectPushEnv(gym.Env):
         self.control_mode  = env_modes['control_mode']
 
         # what traj to generate
-        # self.traj_type = 'straight'
+        self.traj_type = 'straight'
         # self.traj_type = 'curve'
-        self.traj_type = 'sin'
+        # self.traj_type = 'sin'
 
         # set the workframe for the tool center point origin
         # self.work_frame = [0.0, -420.0, 200, -180, 0, 0] # safe
@@ -111,6 +123,53 @@ class ObjectPushEnv(gym.Env):
 
         self.seed()
 
+        # initialise realsens camera
+        # self.setup_realsense()
+
+    # def setup_realsense(self):
+    #     # setup the realsense camera for capturing qunatitative data
+    #     self.rs_camera = make_realsense()
+    #     self.rs_detector = ArUcoDetector(self.rs_camera, marker_length=25.0, dict_id=cv2.aruco.DICT_7X7_50)
+    #     # self.rs_tracker = ArUcoTracker(self.rs_detector, track_attempts=30, display_fn=None)
+    #     self.rs_tracker = ArUcoTracker(self.rs_detector, track_attempts=30, display_fn=display_fn)
+    #
+    #     if self.save_rs_data_flag:
+    #         self.rs_rgb_frames = []
+    #         self.obj_centroids = []
+    #
+    #
+    # def get_realsense_data(self):
+    #     try:
+    #         # self.rs_camera.read()
+    #         self.rs_tracker.track()
+    #     except (ColorFrameError, DepthFrameError, DistanceError, \
+    #             NoMarkersDetected, MultipleMarkersDetected) as e:
+    #             print(e)
+    #             print('on step {}'.format(self._env_step_counter))
+    #             time.sleep()
+    #             self.close()
+    #
+    #
+    #     rs_rgb_frame = self.rs_tracker.detector.camera.color_image
+    #     obj_centroid = self.rs_tracker.centroid_position
+    #     print('Object Centroid: ', obj_centroid)
+    #
+    #     if self.save_rs_data_flag:
+    #         self.rs_rgb_frames.append(rs_rgb_frame)
+    #         self.obj_centroids.append(obj_centroid)
+    #
+    # def save_rs_data(self):
+    #     if self.save_rs_data_flag:
+    #         rs_save_dir = os.path.join(
+    #             'collected_data',
+    #             'rs_data'
+    #         )
+    #         os.makedirs(rs_save_dir, exist_ok=True)
+    #
+    #         rs_video_file = os.path.join(rs_save_dir, 'rs_video.mp4')
+    #         imageio.mimwrite(rs_video_file, np.stack(self.rs_rgb_frames), fps=10)
+
+
     def __enter__(self):
         return self
 
@@ -119,9 +178,12 @@ class ObjectPushEnv(gym.Env):
 
     def close(self):
         # save recorded video
-        if self.record_video:
+        if self.record_video_flag and self.video_frames != []:
             video_file = os.path.join('collected_data', 'tactile_video.mp4')
             imageio.mimwrite(video_file, np.stack(self.video_frames), fps=10)
+
+        # Realsense data
+        # self.save_rs_data()
 
         self._UR5.close()
 
@@ -207,8 +269,9 @@ class ObjectPushEnv(gym.Env):
             sys.exit('Incorrect traj_type specified: {}'.format(self.traj_type))
 
         traj_idx = int(self.reset_counter / 2)
-        np.save('collected_data/traj_pos_{}.npy'.format(traj_idx), self.traj_pos_workframe)
-        np.save('collected_data/traj_rpy_{}.npy'.format(traj_idx), self.traj_rpy_workframe)
+        if self.save_traj_flag:
+            np.save('collected_data/traj_pos_{}.npy'.format(traj_idx), self.traj_pos_workframe)
+            np.save('collected_data/traj_rpy_{}.npy'.format(traj_idx), self.traj_rpy_workframe)
 
         self.update_goal()
 
@@ -422,8 +485,6 @@ class ObjectPushEnv(gym.Env):
 
     def step(self, action):
 
-        start_time = time.time()
-
         # scale and embed actions appropriately
         if self.movement_mode in ['y', 'yRz', 'xyRz']:
             encoded_actions = self.encode_work_frame_actions(action)
@@ -448,6 +509,9 @@ class ObjectPushEnv(gym.Env):
 
         if self._env_step_counter % self.goal_update_rate == 0:
             self.update_goal()
+
+        # update data using realsense
+        # self.get_realsense_data()
 
         return self._observation, reward, done, {}
 
@@ -488,7 +552,7 @@ class ObjectPushEnv(gym.Env):
                 cv2.destroyWindow('real_vs_generated')
                 self._render_closed = True
 
-            if self.record_video:
+            if self.record_video_flag:
                 self.video_frames.append(frame)
 
         return generated_sim_image

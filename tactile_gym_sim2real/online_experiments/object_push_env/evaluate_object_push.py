@@ -3,11 +3,14 @@ import os
 from tactile_gym_sim2real.online_experiments.object_push_env.object_push_env import ObjectPushEnv
 from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_evaluation
 
+from tactile_gym_sim2real.online_experiments.object_push_env.realsense import track_object
+
 # evaluate params
-n_eval_episodes = 2
-n_steps = 200
-show_plot = True
+n_eval_episodes = 1
+n_steps = 100
+show_plot = False
 save_data = False
+save_rs_data_flag = True
 
 # rl models
 rl_model_dir = os.path.join(
@@ -16,8 +19,8 @@ rl_model_dir = os.path.join(
     'object_push-v0',
     'rad_ppo',
     'tactile'
+    # 'tactile_cart_v1'
 )
-
 
 # select which gan
 dataset = 'surface_3d'
@@ -43,6 +46,11 @@ if gan_image_size == [128,128]:
     from tactile_gym_sim2real.pix2pix.gan_models.models_128 import GeneratorUNet
 if gan_image_size == [256,256]:
     from tactile_gym_sim2real.pix2pix.gan_models.models_256 import GeneratorUNet
+
+# spawn process for recording data with realsense camera
+if save_rs_data_flag:
+    pass
+
 
 # run the evaluation
 final_evaluation(

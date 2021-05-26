@@ -1,4 +1,6 @@
 import os, inspect
+import sys
+from pathlib import Path
 import math
 import gym
 import numpy as np
@@ -17,13 +19,15 @@ from tactile_gym_sim2real.online_experiments.gan_net import pix2pix_GAN
 
 from tactile_gym.assets import get_assets_path, add_assets_path
 
-# from robopush.camera import RSCamera, ColorFrameError, DepthFrameError, DistanceError
-# from robopush.detector import ArUcoDetector
-# from robopush.tracker import ArUcoTracker, display_fn, NoMarkersDetected, MultipleMarkersDetected
+from robopush.camera import RSCamera, ColorFrameError, DepthFrameError, DistanceError
+from robopush.detector import ArUcoDetector
+from robopush.tracker import ArUcoTracker, display_fn, NoMarkersDetected, MultipleMarkersDetected
+from robopush.utils import Namespace, transform_euler, inv_transform_euler
 
-
-# def make_realsense():
-#     return RSCamera(color_size=(640, 480), color_fps=30, depth_size=(640, 480), depth_fps=30)
+RS_RESOLUTION = (640, 480)
+FPS = 10.0
+def make_realsense():
+    return RSCamera(color_size=RS_RESOLUTION, color_fps=60, depth_size=RS_RESOLUTION, depth_fps=60)
 
 class ObjectPushEnv(gym.Env):
 
@@ -48,7 +52,7 @@ class ObjectPushEnv(gym.Env):
 
         # flags for saving data
         self.record_video_flag = False
-        self.save_traj_flag = False
+        self.save_traj_flag = True
         self.save_rs_data_flag = True
 
         if self.record_video_flag:
@@ -124,51 +128,121 @@ class ObjectPushEnv(gym.Env):
         self.seed()
 
         # initialise realsens camera
-        # self.setup_realsense()
+        self.setup_realsense()
 
-    # def setup_realsense(self):
-    #     # setup the realsense camera for capturing qunatitative data
-    #     self.rs_camera = make_realsense()
-    #     self.rs_detector = ArUcoDetector(self.rs_camera, marker_length=25.0, dict_id=cv2.aruco.DICT_7X7_50)
-    #     # self.rs_tracker = ArUcoTracker(self.rs_detector, track_attempts=30, display_fn=None)
-    #     self.rs_tracker = ArUcoTracker(self.rs_detector, track_attempts=30, display_fn=display_fn)
-    #
-    #     if self.save_rs_data_flag:
-    #         self.rs_rgb_frames = []
-    #         self.obj_centroids = []
-    #
-    #
-    # def get_realsense_data(self):
-    #     try:
-    #         # self.rs_camera.read()
-    #         self.rs_tracker.track()
-    #     except (ColorFrameError, DepthFrameError, DistanceError, \
-    #             NoMarkersDetected, MultipleMarkersDetected) as e:
-    #             print(e)
-    #             print('on step {}'.format(self._env_step_counter))
-    #             time.sleep()
-    #             self.close()
-    #
-    #
-    #     rs_rgb_frame = self.rs_tracker.detector.camera.color_image
-    #     obj_centroid = self.rs_tracker.centroid_position
-    #     print('Object Centroid: ', obj_centroid)
-    #
-    #     if self.save_rs_data_flag:
-    #         self.rs_rgb_frames.append(rs_rgb_frame)
-    #         self.obj_centroids.append(obj_centroid)
-    #
-    # def save_rs_data(self):
-    #     if self.save_rs_data_flag:
-    #         rs_save_dir = os.path.join(
-    #             'collected_data',
-    #             'rs_data'
-    #         )
-    #         os.makedirs(rs_save_dir, exist_ok=True)
-    #
-    #         rs_video_file = os.path.join(rs_save_dir, 'rs_video.mp4')
-    #         imageio.mimwrite(rs_video_file, np.stack(self.rs_rgb_frames), fps=10)
+    def setup_realsense(self):
 
+
+        # setup the realsense camera for capturing qunatitative data
+        self.rs_camera = make_realsense()
+        self.rs_detector = ArUcoDetector(self.rs_camera, marker_length=25.0, dict_id=cv2.aruco.DICT_7X7_50)
+        self.rs_tracker = ArUcoTracker(self.rs_detector, track_attempts=30, display_fn=None)
+
+        # load extrinsic camera params
+        root_dir = Path(os.path.join('realsense_params'))
+        extrinsics_dir = root_dir/"dynamics/calib/calib_05251104"
+
+        ext = Namespace()
+        ext.load(extrinsics_dir/"extrinsics.pkl")
+
+        # convert extrinsic camera params to 4x4 homogeneous matrices
+        self.rs = Namespace()
+        self.rs.ext_rvec = ext.rvec
+        self.rs.ext_tvec = ext.tvec
+        self.rs.ext_rmat, _ = cv2.Rodrigues(np.array(self.rs.ext_rvec, dtype=np.float64))
+        self.rs.t_cam_base = np.hstack((self.rs.ext_rmat, np.array(self.rs.ext_tvec, dtype=np.float64).reshape((-1, 1))))
+        self.rs.t_cam_base = np.vstack((self.rs.t_cam_base, np.array((0.0, 0.0, 0.0, 1.0)).reshape(1, -1)))
+        self.rs.t_base_cam = np.linalg.pinv(self.rs.t_cam_base)
+
+
+        if self.save_rs_data_flag:
+
+            # create a save dir
+            self.rs_save_dir = os.path.join(
+                'collected_data',
+                'rs_data'
+            )
+            os.makedirs(self.rs_save_dir, exist_ok=True)
+            rs_video_file = os.path.join(self.rs_save_dir, 'rs_video.mp4')
+
+            # Initialise tracking data
+            [
+                self.rs.work_align,
+                self.rs.corners,
+                self.rs.ids,
+                self.rs.cam_poses,
+                self.rs.base_poses,
+                self.rs.centroids,
+                self.rs.cam_centroids,
+                self.rs.base_centroids
+            ] = [], [], [], [], [], [], [], []
+
+            # setup video writer
+            self.rs_vid_out = cv2.VideoWriter(
+                rs_video_file,
+                cv2.VideoWriter_fourcc(*'mp4v'),
+                FPS,
+                RS_RESOLUTION
+            )
+
+
+    def get_realsense_data(self):
+
+        try:
+            self.rs_tracker.track()
+        except (ColorFrameError, DepthFrameError, DistanceError, \
+                NoMarkersDetected, MultipleMarkersDetected) as e:
+                print(e)
+                sys.exit('Issue with Realsense Tracking.')
+
+        # grab data needed for object tracking
+        if self.save_rs_data_flag:
+
+            # compute marker centroid position and pose in base frame
+            cam_centroid = self.rs_tracker.centroid_position
+
+            base_centroid = None
+            if cam_centroid is not None:
+                camera_point_h = np.vstack((np.array(cam_centroid).reshape((-1, 1)), (1,)))
+                base_centroid = np.dot(self.rs.t_base_cam, camera_point_h).squeeze()[:3]
+
+            cam_pose = self.rs_tracker.pose
+            base_pose = None
+            if cam_pose is not None:
+                base_pose = np.dot(self.rs.t_base_cam, cam_pose)
+
+            # Capture ArUco tracking data
+            self.rs.corners.append(self.rs_tracker.corners)
+            self.rs.ids.append(self.rs_tracker.ids)
+            self.rs.centroids.append(self.rs_tracker.centroid)
+            self.rs.cam_centroids.append(cam_centroid)
+            self.rs.base_centroids.append(base_centroid)
+            self.rs.cam_poses.append(cam_pose)
+            self.rs.base_poses.append(base_pose)
+
+            # write video frame
+            rs_rgb_frame = self.rs_camera.color_image
+            self.rs_vid_out.write(rs_rgb_frame)
+
+    def save_rs_data(self):
+        if self.save_rs_data_flag:
+
+            # Convert tracking data to numpy arrays
+            self.rs.corners = np.array(self.rs.corners)
+            self.rs.ids = np.array(self.rs.ids)
+            self.rs.centroids = np.array(self.rs.centroids)
+            self.rs.cam_centroids = np.array(self.rs.cam_centroids)
+            self.rs.base_centroids = np.array(self.rs.base_centroids)
+            self.rs.cam_poses = np.array(self.rs.cam_poses)
+            self.rs.base_poses = np.array(self.rs.base_poses)
+
+            # save tracking data
+            self.rs.save(
+                os.path.join(self.rs_save_dir, "rs_data.pkl")
+            )
+
+            # release the video writer
+            self.rs_vid_out.release()
 
     def __enter__(self):
         return self
@@ -180,10 +254,10 @@ class ObjectPushEnv(gym.Env):
         # save recorded video
         if self.record_video_flag and self.video_frames != []:
             video_file = os.path.join('collected_data', 'tactile_video.mp4')
-            imageio.mimwrite(video_file, np.stack(self.video_frames), fps=10)
+            imageio.mimwrite(video_file, np.stack(self.video_frames), fps=FPS)
 
         # Realsense data
-        # self.save_rs_data()
+        self.save_rs_data()
 
         self._UR5.close()
 
@@ -246,9 +320,8 @@ class ObjectPushEnv(gym.Env):
         })
 
     def setup_traj(self):
-        self.traj_n_points = 20
-        self.traj_spacing = 0.0125
-        self.traj_max_perturb = 0.05
+        self.traj_n_points = 10
+        self.traj_spacing = 0.025
 
         self.goal_update_rate = int(self._max_steps / self.traj_n_points)
 
@@ -257,9 +330,7 @@ class ObjectPushEnv(gym.Env):
         self.traj_pos_workframe = np.zeros(shape=(self.traj_n_points,3))
         self.traj_rpy_workframe = np.zeros(shape=(self.traj_n_points,3))
 
-        if self.traj_type == 'simplex':
-            self.load_trajectory_simplex()
-        elif self.traj_type == 'straight':
+        if self.traj_type == 'straight':
             self.load_trajectory_straight()
         elif self.traj_type == 'curve':
             self.load_trajectory_curve()
@@ -511,7 +582,7 @@ class ObjectPushEnv(gym.Env):
             self.update_goal()
 
         # update data using realsense
-        # self.get_realsense_data()
+        self.get_realsense_data()
 
         return self._observation, reward, done, {}
 

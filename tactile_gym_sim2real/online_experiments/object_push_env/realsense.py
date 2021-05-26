@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import cv2
 import cv2.aruco as aruco
@@ -7,8 +8,10 @@ from robopush.camera import RSCamera, ColorFrameError, DepthFrameError, Distance
 from robopush.detector import ArUcoDetector
 from robopush.tracker import ArUcoTracker, display_fn, NoMarkersDetected, MultipleMarkersDetected
 
+RESOLUTION = (640, 480)
+
 def make_realsense():
-    return RSCamera(color_size=(640, 480), color_fps=60, depth_size=(640, 480), depth_fps=60)
+    return RSCamera(color_size=RESOLUTION, color_fps=60, depth_size=RESOLUTION, depth_fps=60)
 
 def simple_camera_example():
     try:
@@ -60,6 +63,25 @@ def simple_tracker_example():
 
 def track_object(fps=10.0):
 
+    # make save dir
+    rs_save_dir = os.path.join(
+        'collected_data',
+        'temp_rs_data'
+    )
+    os.makedirs(rs_save_dir, exist_ok=True)
+
+    # save data
+    rs_video_file = os.path.join(rs_save_dir, 'rs_video.mp4')
+
+    # setup video writer
+    # rs_vid_out = cv2.VideoWriter(
+    #     rs_video_file,
+    #     # cv2.VideoWriter_fourcc('M','J','P','G'),
+    #     cv2.VideoWriter_fourcc(*'MP4V'),
+    #     fps,
+    #     RESOLUTION
+    # )
+
     # setup the realsense camera for capturing qunatitative data
     try:
         with make_realsense() as rs_camera:
@@ -85,32 +107,26 @@ def track_object(fps=10.0):
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
-                # rs_rgb_frame = rs_tracker.detector.camera.color_image
+                rs_rgb_frame = rs_tracker.detector.camera.color_image
                 obj_centroid = rs_tracker.centroid_position
-                # rs_rgb_frames.append(rs_rgb_frame)
+                rs_rgb_frames.append(rs_rgb_frame.copy()) # copy is important
                 obj_centroids.append(obj_centroid)
                 print('Object Centroid: ', obj_centroid)
 
+                # write frame to output vid
+                # rs_vid_out.write(rs_rgb_frame)
+
+                # hold main loop until next cycle ready
                 while time.perf_counter() < fps_next_time:
                     pass
+
                 print("FPS: ", 1.0 / (time.perf_counter() - fps_start_time))
                 fps_start_time = fps_next_time
 
-            while cv2.waitKey(1) & 0xFF != ord('q'):
-                pass
+            # finishing
+            # rs_vid_out.release()
 
 
-
-            # make save dir
-            rs_save_dir = os.path.join(
-                'collected_data',
-                'rs_data'
-            )
-            os.makedirs(rs_save_dir, exist_ok=True)
-
-            # save data
-            rs_video_file = os.path.join(rs_save_dir, 'rs_video.mp4')
-            imageio.mimwrite(rs_video_file, np.stack(rs_rgb_frames), fps=10)
     finally:
         cv2.destroyAllWindows()
 

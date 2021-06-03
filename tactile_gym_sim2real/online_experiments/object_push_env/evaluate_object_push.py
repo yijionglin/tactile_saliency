@@ -4,7 +4,7 @@ from tactile_gym_sim2real.online_experiments.object_push_env.object_push_env imp
 from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_evaluation
 
 # evaluate params
-n_eval_episodes = 3
+n_eval_episodes = 1
 n_steps = 250
 show_plot = False
 save_data = True
@@ -16,8 +16,11 @@ rl_model_dir = os.path.join(
     'object_push-v0',
     'rad_ppo',
     # 'tactile'
-    'tactile_cart_v1'
+    'tactile_autogoal'
+    # 'tactile_cart_v1'
     # 'tactile_cart_v3'
+    # 'tactile_cart_v4'
+    # 'tactile_cart_autogoal'
 )
 
 # select which gan

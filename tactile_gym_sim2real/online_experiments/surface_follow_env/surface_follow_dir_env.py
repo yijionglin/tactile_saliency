@@ -44,9 +44,9 @@ class SurfaceFollowDirEnv(gym.Env):
         self.control_mode  = env_modes['control_mode']
 
         # set which task we're testing for setting workframe/limits
-        # self.task = 'taichi'
+        self.task = 'taichi'
         # self.task = 'perspex'
-        self.task = 'ball'
+        # self.task = 'ball'
         # self.task = '3d_surface'
 
         if self.task == 'taichi':

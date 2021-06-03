@@ -4,10 +4,10 @@ from tactile_gym_sim2real.online_experiments.surface_follow_env.surface_follow_d
 from tactile_gym_sim2real.online_experiments.evaluate_rl_agent import final_evaluation
 
 # evaluate params
-n_eval_episodes = 8
+n_eval_episodes = 1
 n_steps = 200
 show_plot = False
-save_data = True
+save_data = False
 
 # rl models
 rl_model_dir = os.path.join(

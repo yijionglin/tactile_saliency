@@ -79,11 +79,9 @@ def final_evaluation(
     def eval_model(model, env, n_eval_episodes=10, deterministic=True):
 
         if save_data:
-            # column_names = ['step', 'action', 'tcp_pose', 'tcp_vel', 'time']
             column_names = ['step', 'action', 'tcp_pose', 'time']
             target_df = pd.DataFrame(columns=column_names)
             UR5 = env.envs[0]._UR5
-            # rtde_client = UR5.robot.sync_robot.controller._client
             csv_id = 0
 
         episode_rewards, episode_lengths = [], []

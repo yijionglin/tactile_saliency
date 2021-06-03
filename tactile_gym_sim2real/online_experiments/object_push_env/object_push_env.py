@@ -52,8 +52,8 @@ class ObjectPushEnv(gym.Env):
 
         # flags for saving data
         self.record_video_flag = False
-        self.save_traj_flag = True
-        self.save_rs_data_flag = True
+        self.save_traj_flag = False
+        self.save_rs_data_flag = False
 
         if self.record_video_flag:
             self.video_frames = []
@@ -76,7 +76,7 @@ class ObjectPushEnv(gym.Env):
 
         # set limits for the tool center point (rel to workframe)
         self.TCP_lims = np.zeros(shape=(6,2))
-        self.TCP_lims[0,0], self.TCP_lims[0,1] = -50.0, 400.0  # x lims
+        self.TCP_lims[0,0], self.TCP_lims[0,1] = -0.0, 300.0  # x lims
         self.TCP_lims[1,0], self.TCP_lims[1,1] = -100.0, 100.0  # y lims
         self.TCP_lims[2,0], self.TCP_lims[2,1] = 0.0, 0.0     # z lims
         self.TCP_lims[3,0], self.TCP_lims[3,1] = 0.0, 0.0     # roll lims
@@ -128,7 +128,8 @@ class ObjectPushEnv(gym.Env):
         self.seed()
 
         # initialise realsens camera
-        self.setup_realsense()
+        if self.save_rs_data_flag:
+            self.setup_realsense()
 
     def setup_realsense(self):
 
@@ -154,36 +155,33 @@ class ObjectPushEnv(gym.Env):
         self.rs.t_cam_base = np.vstack((self.rs.t_cam_base, np.array((0.0, 0.0, 0.0, 1.0)).reshape(1, -1)))
         self.rs.t_base_cam = np.linalg.pinv(self.rs.t_cam_base)
 
+        # create a save dir
+        self.rs_save_dir = os.path.join(
+            'collected_data',
+            'rs_data'
+        )
+        os.makedirs(self.rs_save_dir, exist_ok=True)
+        rs_video_file = os.path.join(self.rs_save_dir, 'rs_video.mp4')
 
-        if self.save_rs_data_flag:
+        # Initialise tracking data
+        [
+            self.rs.work_align,
+            self.rs.corners,
+            self.rs.ids,
+            self.rs.cam_poses,
+            self.rs.base_poses,
+            self.rs.centroids,
+            self.rs.cam_centroids,
+            self.rs.base_centroids
+        ] = [], [], [], [], [], [], [], []
 
-            # create a save dir
-            self.rs_save_dir = os.path.join(
-                'collected_data',
-                'rs_data'
-            )
-            os.makedirs(self.rs_save_dir, exist_ok=True)
-            rs_video_file = os.path.join(self.rs_save_dir, 'rs_video.mp4')
-
-            # Initialise tracking data
-            [
-                self.rs.work_align,
-                self.rs.corners,
-                self.rs.ids,
-                self.rs.cam_poses,
-                self.rs.base_poses,
-                self.rs.centroids,
-                self.rs.cam_centroids,
-                self.rs.base_centroids
-            ] = [], [], [], [], [], [], [], []
-
-            # setup video writer
-            self.rs_vid_out = cv2.VideoWriter(
-                rs_video_file,
-                cv2.VideoWriter_fourcc(*'mp4v'),
-                FPS,
-                RS_RESOLUTION
-            )
+        # setup video writer
+        self.rs_vid_out = cv2.VideoWriter(
+            rs_video_file,
+            cv2.VideoWriter_fourcc(*'mp4v'),
+            FPS,
+            RS_RESOLUTION
+        )
 
 
     def get_realsense_data(self):
@@ -251,6 +249,7 @@ class ObjectPushEnv(gym.Env):
         self.close()
 
     def close(self):
+
         # save recorded video
         if self.record_video_flag and self.video_frames != []:
             video_file = os.path.join('collected_data', 'tactile_video.mp4')
@@ -287,8 +286,8 @@ class ObjectPushEnv(gym.Env):
         elif self.control_mode == 'TCP_velocity_control':
 
             # approx sim_vel / 1.6
-            max_pos_vel = 10                # mm/s
-            max_ang_vel = 5  * (np.pi/180) # rad/s
+            max_pos_vel = 5                # mm/s
+            max_ang_vel = 2.5  * (np.pi/180) # rad/s
 
             self.x_act_min, self.x_act_max = -max_pos_vel, max_pos_vel
             self.y_act_min, self.y_act_max = -max_pos_vel, max_pos_vel
@@ -323,10 +322,10 @@ class ObjectPushEnv(gym.Env):
         self.traj_n_points = 10
         self.traj_spacing = 0.025
 
-        self.goal_update_rate = int(self._max_steps / self.traj_n_points)
+        self.goal_update_rate = 50
 
         # setup traj arrays
-        self.targ_traj_list_id = -1
+        self.targ_traj_list_id = 0
         self.traj_pos_workframe = np.zeros(shape=(self.traj_n_points,3))
         self.traj_rpy_workframe = np.zeros(shape=(self.traj_n_points,3))
 
@@ -350,8 +349,8 @@ class ObjectPushEnv(gym.Env):
 
         # randomly pick traj direction
         # traj_ang = np.random.uniform(-np.pi/8, np.pi/8)
-        traj_angs = [-np.pi/8, 0.0, np.pi/8]
-        # traj_angs = [0.0, 0.0, 0.0, 0.0]
+        # traj_angs = [-np.pi/8, 0.0, np.pi/8]
+        traj_angs = [0.0, 0.0, 0.0, 0.0]
         traj_idx = int(self.reset_counter / 2)
         init_offset = 0.04 + self.traj_spacing
 
@@ -458,8 +457,8 @@ class ObjectPushEnv(gym.Env):
         current_tip_pose = self._UR5.current_TCP_pose
 
         # angle for perp and par vectors
-        par_ang  = ( current_tip_pose[5]  ) * np.pi/180
-        perp_ang = ( current_tip_pose[5] - 90 ) * np.pi/180
+        par_ang  = ( current_tip_pose[5] + self.sensor_offset_ang ) * np.pi/180
+        perp_ang = ( current_tip_pose[5] + self.sensor_offset_ang - 90 ) * np.pi/180
 
         # create vectors (directly in workframe) pointing in perp and par directions of current sensor
         workframe_par_tip_direction  = np.array([np.cos(par_ang),  np.sin(par_ang), 0]) # vec pointing outwards from tip
@@ -582,7 +581,8 @@ class ObjectPushEnv(gym.Env):
             self.update_goal()
 
         # update data using realsense
-        self.get_realsense_data()
+        if self.save_rs_data_flag:
+            self.get_realsense_data()
 
         return self._observation, reward, done, {}
 

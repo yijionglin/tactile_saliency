@@ -19,21 +19,21 @@ def make_sensor():
                                  is_color=True)
         ))
 
-record_video = False
+record_video = True
 if record_video:
     video_frames = []
 
 # useful for rolling task
-track_indent = True
+track_indent = False
 
 # image_size = [64,64]
-image_size = [128,128]
-# image_size = [256,256]
+# image_size = [128,128]
+image_size = [256,256]
 
 # set which gan
 # dataset = 'edge_2d'
-dataset = 'surface_3d'
-# dataset = 'spherical_probe'
+# dataset = 'surface_3d'
+dataset = 'spherical_probe'
 
 data_type = 'tap'
 # data_type = 'shear'

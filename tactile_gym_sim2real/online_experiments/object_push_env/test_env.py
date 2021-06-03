@@ -80,8 +80,8 @@ def main():
 
                 a = []
 
-                a = env.action_space.sample()
-                # a = [0.0, 0.0, -0.25]
+                # a = env.action_space.sample()
+                a = [0.0, 0.0, -0.25]
 
                 # if step < 50:
                 #     a = [0.25, 0.0, 0.0]

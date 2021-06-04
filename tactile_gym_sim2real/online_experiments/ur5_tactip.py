@@ -26,7 +26,7 @@ def make_robot():
 
 def make_sensor():
     return AsyncProcessor(CameraStreamProcessorMT(
-            camera=CvVideoCamera(source=0,
+            camera=CvVideoCamera(source=1, # TODO: change back to 0
                                  frame_size=(640, 480),
                                  is_color=True,
                                  ),

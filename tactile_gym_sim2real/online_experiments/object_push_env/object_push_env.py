@@ -52,8 +52,8 @@ class ObjectPushEnv(gym.Env):
 
         # flags for saving data
         self.record_video_flag = False
-        self.save_traj_flag = False
-        self.save_rs_data_flag = False
+        self.save_traj_flag = True
+        self.save_rs_data_flag = True
 
         if self.record_video_flag:
             self.video_frames = []
@@ -63,9 +63,9 @@ class ObjectPushEnv(gym.Env):
         self.control_mode  = env_modes['control_mode']
 
         # what traj to generate
-        self.traj_type = 'straight'
+        # self.traj_type = 'straight'
         # self.traj_type = 'curve'
-        # self.traj_type = 'sin'
+        self.traj_type = 'sin'
 
         # set the workframe for the tool center point origin
         # self.work_frame = [0.0, -420.0, 200, -180, 0, 0] # safe
@@ -141,7 +141,8 @@ class ObjectPushEnv(gym.Env):
 
         # load extrinsic camera params
         root_dir = Path(os.path.join('realsense_params'))
-        extrinsics_dir = root_dir/"dynamics/calib/calib_05251104"
+        # extrinsics_dir = root_dir/"dynamics/calib/calib_05251104"
+        extrinsics_dir = root_dir/"dynamics/calib/calib_06041016"
 
         ext = Namespace()
         ext.load(extrinsics_dir/"extrinsics.pkl")
@@ -349,8 +350,7 @@ class ObjectPushEnv(gym.Env):
 
         # randomly pick traj direction
         # traj_ang = np.random.uniform(-np.pi/8, np.pi/8)
-        # traj_angs = [-np.pi/8, 0.0, np.pi/8]
-        traj_angs = [0.0, 0.0, 0.0, 0.0]
+        traj_angs = [-np.pi/8, 0.0, np.pi/8, 0.0]
         traj_idx = int(self.reset_counter / 2)
         init_offset = 0.04 + self.traj_spacing
 

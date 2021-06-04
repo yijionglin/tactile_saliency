@@ -9,28 +9,31 @@ import os
 
 from cri import transforms
 import pybullet as p
+import glob
 
 from robopush.utils import Namespace
 
-data_dir = 'test_2'
+# data_dir = 'red_cube_straight'
+# data_dir = 'red_cube_curve'
+# data_dir = 'red_cube_sin'
 
-# data dir
-# data_dir = 'cube_straight'
 # data_dir = 'cylinder_straight'
-# data_dir = 'hexagonal_prism_straight'
-# data_dir = 'mug_straight'
-#
-# data_dir = 'cube_curve'
 # data_dir = 'cylinder_curve'
-# data_dir = 'hexagonal_prism_curve'
-# data_dir = 'mug_curve'
-#
-# data_dir = 'cube_sin'
 # data_dir = 'cylinder_sin'
-# data_dir = 'hexagonal_prism_sin'
-# data_dir = 'mug_sin'
 
-num_traj = 2
+# data_dir = 'triangle_straight'
+# data_dir = 'triangle_curve'
+data_dir = 'triangle_sin'
+
+traj_files = glob.glob(
+    os.path.join(
+        os.path.dirname(__file__),
+        'collected_data',
+        data_dir+"/*.npy"
+        )
+    )
+
+num_traj = int(len(traj_files)/2)
 
 # setup figure
 fig, ax = plt.subplots()
@@ -48,8 +51,10 @@ def basepos_to_workpos(pos):
     workframe_pos_mat = np.dot(inv_transformation_matrix, pos_mat)
     workframe_pos = transforms.mat2euler(workframe_pos_mat)
 
-    workframe_pos = pos + [350, -520, 0]
+    # workframe_pos = pos + [350, -520, 0]
     # workframe_pos = pos + [0, 0, 0]
+
+    # workframe_pos += np.array([20, 0, 0, 0, 0, 0])
 
     return np.array(workframe_pos)
 

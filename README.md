@@ -112,27 +112,9 @@ python pix2pix_cycle_train.py
 ```
 
 
-### Sim-to-Real Deep-RL Policy Application ###
+### Tactile Noise Generator ###
 
-*Note that before the sim-to-real application, you should already have an image transfer model for real-to-sim mapping obtained from previous steps and a deep-RL policy trained for a specific task using [Tactile Gym](https://github.com/ac-93/tactile_gym).*
-
-Navigate to the directory for sim-to-real deep-RL policy application,
-```
-cd online_experiments
-```
-
-Before any sim-to-real application, it's always good to check the translation quality of the transfer model by
-```
-python test_gan.py
-```
-
-Choose the task you would like to play with; for example, if you want the robot to perform the edge-following task,
-
-
-```
-cd edge_follow_env
-python evaluate_edge_follow.py
-```
+We first collect a set of tactile noise images with tactile gym using a set of stimuli. Then we use a conventional structure of Variational AutoEncoder (VAE) to learn to reconstruct these tactile noise images. Finally, we use the generator to generate various tactile noise images for tactile saliency network training. Data can be downloaded from [here](https://sites.google.com/view/tactile-saliency/). 
 
 
 ### Contributor ###
@@ -145,5 +127,15 @@ python evaluate_edge_follow.py
 If you use this repo in your work, please cite
 
 ```
+@article{lin2023attention,
 
+  title={Attention for Robot Touch: Tactile Saliency Prediction for Robust Sim-to-Real Tactile Control},
+
+  author={Lin, Yijiong and Comi, Mauro and Church, Alex and Zhang, Dandan and Lepora, Nathan F},
+
+  journal={arXiv preprint arXiv:2307.14510},
+
+  year={2023}
+
+}
 ```

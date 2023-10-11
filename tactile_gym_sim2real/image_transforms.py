@@ -8,7 +8,7 @@ import cv2
 from skimage.util import random_noise
 from scipy.ndimage import zoom
 import json
-
+from ipdb import set_trace
 # Save the dictionaries
 def save_json_obj(obj, name):
     with open(name + '.json', 'w') as fp:
@@ -58,7 +58,7 @@ def load_video_frames(filename):
     return np.array(frames)
 
 
-def process_image(image, gray=True, bbox=None, dims=None, stdiz=False, normlz=False, rshift=None, rzoom=None, thresh=False, add_axis=False, brightlims=None, noise_var=None):
+def process_image(image, gray=True, bbox=None, dims=None, stdiz=False, normlz=False, rshift=None, rzoom=None, thresh=False, add_axis=False, brightlims=None, noise_var=None, circle_mask = True):
     ''' Process raw image (e.g., before applying to neural network).
     '''
     if gray:
@@ -118,6 +118,9 @@ def process_image(image, gray=True, bbox=None, dims=None, stdiz=False, normlz=Fa
         # position of this is important
         image = image.astype(np.float32) / 255.0
 
+    if circle_mask:
+        image = apply_circle_mask(image, 58)
+        # set_trace()
     return image
 
 def threshold_image(image):
@@ -227,3 +230,19 @@ def transform_matrix_offset_center(matrix, x, y):
     reset_matrix = np.array([[1, 0, -o_x], [0, 1, -o_y], [0, 0, 1]])
     transform_matrix = np.dot(np.dot(offset_matrix, matrix), reset_matrix)
     return transform_matrix
+
+
+def apply_circle_mask(image, radius=70):
+    hh, ww = image.shape[:2]
+    hc = hh // 2
+    wc = ww // 2
+
+    mask = np.ones(shape=(hh, ww))
+    mask = cv2.circle(
+        mask,
+        (wc, hc),
+        radius, 0, -1
+    )
+
+    image[mask == 1] = 0
+    return image

@@ -1,10 +1,10 @@
 from setuptools import setup
 
-setup(name='tactile_gym_sim2real',
+setup(name='tactile_saliency',
       version='0.0.1',
-      description='Conversion between tactile image gathered on a physical robot and those gathered in simulation',
-      author='Alex Church',
-      author_email='alexchurch1993@gmail.com',
+      description='A Repository for Tactile Saliency Prediction which is built on top of tactile_gym_sim2real',
+      author='Yijiong Lin',
+      author_email='yijionglin.bourne@gmail.com',
       license='MIT',
-      packages=['tactile_gym_sim2real'],
+      packages=['tactile_saliency'],
       zip_safe=False)
